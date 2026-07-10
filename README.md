@@ -9,3 +9,4 @@
 3. [화면 기획서 (03-screen-plan.md)](./docs/03-screen-plan.md)\
   3.5. [Figma](https://www.figma.com/design/537t4b7UmE9nLmGMYb3Cts/Jariyo?node-id=0-1&t=ZtCU8cdaZHfSqsYl-1)
 4. [API 명세서 (04-api-spec.md)](./docs/04-api-spec.md)
+5. [프론트엔드 친화적 API 명세서 (05-frontend-api-guide.md)](./docs/05-frontend-api-guide.md)
