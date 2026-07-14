@@ -4,6 +4,8 @@
 
 ## 목차
 
+1. [기여 가이드 (CONTRIBUTING.md)](./CONTRIBUTING.md)
+2. [데일리 스크럼 템플릿 (DAILY_SCRUM_TEMPLATE.md)](./DAILY_SCRUM_TEMPLATE.md)
 1. [기획서 (01-plan.md)](./docs/01-plan.md)
 2. [데이터 모델 (02-data-model.md)](./docs/02-data-model.md)
 3. [화면 기획서 (03-screen-plan.md)](./docs/03-screen-plan.md)\
