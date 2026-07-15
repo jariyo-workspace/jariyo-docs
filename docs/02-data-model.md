@@ -1391,6 +1391,69 @@ CANCELLED
 
 # 15. 상태 전이 설계
 
+## 15.0 MVP 기준 상태명
+
+MVP 문서와 API 문서에서는 아래 상태명을 우선 기준으로 사용한다.
+
+### 예약
+
+```text
+HELD
+CONFIRMED
+CHECKED_IN
+IN_SERVICE
+COMPLETED
+CANCELLED
+NO_SHOW
+EXPIRED
+```
+
+### 예약 대기
+
+```text
+WAITING
+OFFERED
+RESERVED
+CANCELLED
+EXPIRED
+```
+
+### 현장 대기
+
+```text
+WAITING
+CALLED
+CHECKED_IN
+IN_SERVICE
+COMPLETED
+SKIPPED
+CANCELLED
+NO_SHOW
+```
+
+### 권장 이벤트명
+
+```text
+RESERVATION_CONFIRMED
+RESERVATION_CANCELLED
+RESERVATION_EXPIRED
+WAITLIST_ENTRY_CREATED
+WAITLIST_ENTRY_CANCELLED
+SLOT_OFFER_CREATED
+SLOT_OFFER_ACCEPTED
+SLOT_OFFER_EXPIRED
+WALK_IN_REGISTERED
+WALK_IN_CALLED
+CHECK_IN_COMPLETED
+SERVICE_STARTED
+SERVICE_COMPLETED
+```
+
+### 주의
+
+* API 문서에서 `예약 대기`, `현장 대기`, `호출 응답` 같은 표현이 나오더라도 내부 상태명은 위 기준을 따른다.
+* 자동 처리와 수동 처리는 같은 상태를 공유하되 `changed_by_type` 또는 감사 로그로 구분한다.
+
 ## 15.1 예약 상태 전이
 
 ```mermaid

@@ -19,6 +19,14 @@
 
 API는 단순한 데이터 CRUD보다 사용자 행동과 도메인 상태 전이를 중심으로 설계한다.
 
+## 1.1 MVP 우선순위 표기
+
+이 문서에서는 섹션 제목에 다음 태그를 붙여 MVP 우선순위를 구분한다.
+
+* `[MVP-P0]` MVP 필수
+* `[MVP-P1]` MVP 후속, 필수 흐름을 보강
+* `[MVP-P2]` MVP 이후
+
 ---
 
 # 2. 기본 규칙
@@ -327,7 +335,7 @@ IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_REQUEST
 
 # 4. 인증 API
 
-## 4.1 회원가입
+## [MVP-P0] 4.1 회원가입
 
 ```http
 POST /api/v1/auth/sign-up
@@ -372,7 +380,7 @@ REQUIRED_AGREEMENT_MISSING
 
 ---
 
-## 4.2 로그인
+## [MVP-P0] 4.2 로그인
 
 ```http
 POST /api/v1/auth/sign-in
@@ -401,7 +409,7 @@ POST /api/v1/auth/sign-in
 
 ---
 
-## 4.3 토큰 재발급
+## [MVP-P0] 4.3 토큰 재발급
 
 ```http
 POST /api/v1/auth/refresh
@@ -417,7 +425,7 @@ POST /api/v1/auth/refresh
 
 ---
 
-## 4.4 로그아웃
+## [MVP-P0] 4.4 로그아웃
 
 ```http
 POST /api/v1/auth/sign-out
@@ -425,7 +433,7 @@ POST /api/v1/auth/sign-out
 
 ---
 
-## 4.5 내 프로필 조회
+## [MVP-P0] 4.5 내 프로필 조회
 
 ```http
 GET /api/v1/me
@@ -459,7 +467,7 @@ GET /api/v1/me
 
 # 5. 고객용 매장 조회 API
 
-## 5.1 매장 목록 조회
+## [MVP-P0] 5.1 매장 목록 조회
 
 ```http
 GET /api/v1/stores
@@ -513,7 +521,7 @@ GET /api/v1/stores?query=헤어&openNow=true&limit=20
 
 ---
 
-## 5.2 매장 상세 조회
+## [MVP-P0] 5.2 매장 상세 조회
 
 ```http
 GET /api/v1/stores/{storeId}
@@ -555,7 +563,7 @@ GET /api/v1/stores/{storeId}
 
 ---
 
-## 5.3 매장 서비스 목록 조회
+## [MVP-P0] 5.3 매장 서비스 목록 조회
 
 ```http
 GET /api/v1/stores/{storeId}/services
@@ -588,7 +596,7 @@ activeOnly=true
 
 ---
 
-## 5.4 서비스 담당 직원 조회
+## [MVP-P0] 5.4 서비스 담당 직원 조회
 
 ```http
 GET /api/v1/stores/{storeId}/services/{serviceId}/staff
@@ -620,7 +628,7 @@ date
 
 # 6. 예약 가능 시간 API
 
-## 6.1 예약 가능 시간 조회
+## [MVP-P0] 6.1 예약 가능 시간 조회
 
 ```http
 GET /api/v1/stores/{storeId}/availability
@@ -693,7 +701,7 @@ WAITLIST_AVAILABLE
 
 # 7. 고객 예약 API
 
-## 7.1 예약 생성
+## [MVP-P0] 7.1 예약 생성
 
 ```http
 POST /api/v1/reservations
@@ -756,7 +764,7 @@ INVALID_PARTY_SIZE
 
 ---
 
-## 7.2 예약 홀드 생성
+## [MVP-P1] 7.2 예약 홀드 생성
 
 결제나 추가 확인 단계가 필요한 경우 사용할 수 있다.
 
@@ -791,7 +799,7 @@ Idempotency-Key: {key}
 
 ---
 
-## 7.3 예약 홀드 확정
+## [MVP-P1] 7.3 예약 홀드 확정
 
 ```http
 POST /api/v1/reservations/{reservationId}/confirm
@@ -820,7 +828,7 @@ RESERVATION_SLOT_ALREADY_TAKEN
 
 ---
 
-## 7.4 내 예약 목록 조회
+## [MVP-P0] 7.4 내 예약 목록 조회
 
 ```http
 GET /api/v1/me/reservations
@@ -871,7 +879,7 @@ GET /api/v1/me/reservations?status=CONFIRMED&from=2026-07-01
 
 ---
 
-## 7.5 예약 상세 조회
+## [MVP-P0] 7.5 예약 상세 조회
 
 ```http
 GET /api/v1/reservations/{reservationId}
@@ -914,7 +922,7 @@ GET /api/v1/reservations/{reservationId}
 
 ---
 
-## 7.6 예약 취소
+## [MVP-P0] 7.6 예약 취소
 
 ```http
 POST /api/v1/reservations/{reservationId}/cancel
@@ -954,7 +962,7 @@ RESERVATION_NOT_OWNED_BY_USER
 
 ---
 
-## 7.7 예약 상태 이력 조회
+## [MVP-P1] 7.7 예약 상태 이력 조회
 
 ```http
 GET /api/v1/reservations/{reservationId}/history
@@ -980,7 +988,7 @@ GET /api/v1/reservations/{reservationId}/history
 
 # 8. 예약 대기 API
 
-## 8.1 예약 대기 신청
+## [MVP-P1] 8.1 예약 대기 신청
 
 ```http
 POST /api/v1/waitlists
@@ -1035,7 +1043,7 @@ STAFF_NOT_AVAILABLE
 
 ---
 
-## 8.2 내 예약 대기 목록 조회
+## [MVP-P1] 8.2 내 예약 대기 목록 조회
 
 ```http
 GET /api/v1/me/waitlists
@@ -1053,7 +1061,7 @@ limit
 
 ---
 
-## 8.3 예약 대기 상세 조회
+## [MVP-P1] 8.3 예약 대기 상세 조회
 
 ```http
 GET /api/v1/waitlists/{waitlistId}
@@ -1091,7 +1099,7 @@ GET /api/v1/waitlists/{waitlistId}
 
 ---
 
-## 8.4 예약 대기 조건 변경
+## [MVP-P2] 8.4 예약 대기 조건 변경
 
 ```http
 PUT /api/v1/waitlists/{waitlistId}
@@ -1126,7 +1134,7 @@ INVALID_WAITLIST_TIME_RANGE
 
 ---
 
-## 8.5 예약 대기 취소
+## [MVP-P1] 8.5 예약 대기 취소
 
 ```http
 POST /api/v1/waitlists/{waitlistId}/cancel
@@ -1149,7 +1157,7 @@ Idempotency-Key: {key}
 
 # 9. 빈자리 제안 API
 
-## 9.1 내 활성 빈자리 제안 목록
+## [MVP-P1] 9.1 내 활성 빈자리 제안 목록
 
 ```http
 GET /api/v1/me/slot-offers
@@ -1163,7 +1171,7 @@ status=PENDING
 
 ---
 
-## 9.2 빈자리 제안 상세 조회
+## [MVP-P1] 9.2 빈자리 제안 상세 조회
 
 ```http
 GET /api/v1/slot-offers/{offerId}
@@ -1199,7 +1207,7 @@ GET /api/v1/slot-offers/{offerId}
 
 ---
 
-## 9.3 빈자리 제안 수락
+## [MVP-P1] 9.3 빈자리 제안 수락
 
 ```http
 POST /api/v1/slot-offers/{offerId}/accept
@@ -1254,7 +1262,7 @@ RESERVATION_SLOT_ALREADY_TAKEN
 
 ---
 
-## 9.4 빈자리 제안 거절
+## [MVP-P2] 9.4 빈자리 제안 거절
 
 ```http
 POST /api/v1/slot-offers/{offerId}/decline
@@ -1290,7 +1298,7 @@ Idempotency-Key: {key}
 
 # 10. 현장 대기 API
 
-## 10.1 현장 대기 정보 조회
+## [MVP-P1] 10.1 현장 대기 정보 조회
 
 ```http
 GET /api/v1/stores/{storeId}/walk-in-status
@@ -1320,7 +1328,7 @@ staffId
 
 ---
 
-## 10.2 현장 대기 등록
+## [MVP-P1] 10.2 현장 대기 등록
 
 ```http
 POST /api/v1/walk-ins
@@ -1382,7 +1390,7 @@ INVALID_PARTY_SIZE
 
 ---
 
-## 10.3 내 현장 대기 목록 조회
+## [MVP-P1] 10.3 내 현장 대기 목록 조회
 
 ```http
 GET /api/v1/me/walk-ins
@@ -1397,7 +1405,7 @@ date
 
 ---
 
-## 10.4 현장 대기 상세 조회
+## [MVP-P1] 10.4 현장 대기 상세 조회
 
 ```http
 GET /api/v1/walk-ins/{walkInId}
@@ -1430,7 +1438,7 @@ GET /api/v1/walk-ins/{walkInId}
 
 ---
 
-## 10.5 현장 대기 취소
+## [MVP-P1] 10.5 현장 대기 취소
 
 ```http
 POST /api/v1/walk-ins/{walkInId}/cancel
@@ -1447,7 +1455,7 @@ Idempotency-Key: {key}
 
 ---
 
-## 10.6 호출 응답
+## [MVP-P1] 10.6 호출 응답
 
 ```http
 POST /api/v1/walk-ins/{walkInId}/respond-call
@@ -1485,7 +1493,7 @@ CANCEL
 
 # 11. 체크인 API
 
-## 11.1 예약 체크인 가능 여부 조회
+## [MVP-P1] 11.1 예약 체크인 가능 여부 조회
 
 ```http
 GET /api/v1/reservations/{reservationId}/check-in-availability
@@ -1506,7 +1514,7 @@ GET /api/v1/reservations/{reservationId}/check-in-availability
 
 ---
 
-## 11.2 예약 체크인
+## [MVP-P1] 11.2 예약 체크인
 
 ```http
 POST /api/v1/reservations/{reservationId}/check-in
@@ -1545,7 +1553,7 @@ RESERVATION_INVALID_STATE
 
 ---
 
-## 11.3 QR 체크인
+## [MVP-P2] 11.3 QR 체크인
 
 ```http
 POST /api/v1/check-ins/qr
@@ -1572,7 +1580,7 @@ CHECK_IN_TOKEN_ALREADY_USED
 
 # 12. 고객 통합 홈 API
 
-## 12.1 고객 홈 상태 조회
+## [MVP-P2] 12.1 고객 홈 상태 조회
 
 ```http
 GET /api/v1/me/home
@@ -1608,7 +1616,7 @@ GET /api/v1/me/home
 
 # 13. 알림 API
 
-## 13.1 내 알림 목록
+## [MVP-P2] 13.1 내 알림 목록
 
 ```http
 GET /api/v1/me/notifications
@@ -1644,7 +1652,7 @@ limit
 
 ---
 
-## 13.2 알림 읽음 처리
+## [MVP-P2] 13.2 알림 읽음 처리
 
 ```http
 POST /api/v1/notifications/{notificationId}/read
@@ -1652,7 +1660,7 @@ POST /api/v1/notifications/{notificationId}/read
 
 ---
 
-## 13.3 전체 알림 읽음 처리
+## [MVP-P2] 13.3 전체 알림 읽음 처리
 
 ```http
 POST /api/v1/me/notifications/read-all
@@ -1660,7 +1668,7 @@ POST /api/v1/me/notifications/read-all
 
 ---
 
-## 13.4 알림 설정 조회
+## [MVP-P2] 13.4 알림 설정 조회
 
 ```http
 GET /api/v1/me/notification-settings
@@ -1668,7 +1676,7 @@ GET /api/v1/me/notification-settings
 
 ---
 
-## 13.5 알림 설정 변경
+## [MVP-P2] 13.5 알림 설정 변경
 
 ```http
 PUT /api/v1/me/notification-settings
@@ -1689,7 +1697,7 @@ PUT /api/v1/me/notification-settings
 
 # 14. 운영자 매장 홈 API
 
-## 14.1 오늘 운영 현황 조회
+## [MVP-P1] 14.1 오늘 운영 현황 조회
 
 ```http
 GET /api/v1/admin/stores/{storeId}/dashboard/today
@@ -1725,7 +1733,7 @@ GET /api/v1/admin/stores/{storeId}/dashboard/today
 
 # 15. 운영자 예약 관리 API
 
-## 15.1 매장 예약 목록 조회
+## [MVP-P1] 15.1 매장 예약 목록 조회
 
 ```http
 GET /api/v1/admin/stores/{storeId}/reservations
@@ -1746,7 +1754,7 @@ limit
 
 ---
 
-## 15.2 운영자 예약 상세 조회
+## [MVP-P1] 15.2 운영자 예약 상세 조회
 
 ```http
 GET /api/v1/admin/stores/{storeId}/reservations/{reservationId}
@@ -1754,7 +1762,7 @@ GET /api/v1/admin/stores/{storeId}/reservations/{reservationId}
 
 ---
 
-## 15.3 수동 예약 생성
+## [MVP-P2] 15.3 수동 예약 생성
 
 ```http
 POST /api/v1/admin/stores/{storeId}/reservations
@@ -1790,7 +1798,7 @@ Idempotency-Key: {key}
 
 ---
 
-## 15.4 예약 시간 변경
+## [MVP-P2] 15.4 예약 시간 변경
 
 ```http
 POST /api/v1/admin/stores/{storeId}/reservations/{reservationId}/reschedule
@@ -1818,7 +1826,7 @@ STAFF_NOT_AVAILABLE
 
 ---
 
-## 15.5 담당 직원 변경
+## [MVP-P2] 15.5 담당 직원 변경
 
 ```http
 POST /api/v1/admin/stores/{storeId}/reservations/{reservationId}/assign-staff
@@ -1836,7 +1844,7 @@ Idempotency-Key: {key}
 
 ---
 
-## 15.6 운영자 예약 취소
+## [MVP-P1] 15.6 운영자 예약 취소
 
 ```http
 POST /api/v1/admin/stores/{storeId}/reservations/{reservationId}/cancel
@@ -1855,7 +1863,7 @@ Idempotency-Key: {key}
 
 ---
 
-## 15.7 노쇼 처리
+## [MVP-P1] 15.7 노쇼 처리
 
 ```http
 POST /api/v1/admin/stores/{storeId}/reservations/{reservationId}/mark-no-show
@@ -1879,7 +1887,7 @@ RESERVATION_INVALID_STATE
 
 ---
 
-## 15.8 직원 수동 체크인
+## [MVP-P1] 15.8 직원 수동 체크인
 
 ```http
 POST /api/v1/admin/stores/{storeId}/reservations/{reservationId}/check-in
@@ -1890,7 +1898,7 @@ Idempotency-Key: {key}
 
 # 16. 운영자 현장 대기 API
 
-## 16.1 현장 대기열 조회
+## [MVP-P1] 16.1 현장 대기열 조회
 
 ```http
 GET /api/v1/admin/stores/{storeId}/walk-ins
@@ -1926,7 +1934,7 @@ date
 
 ---
 
-## 16.2 운영자 현장 대기 등록
+## [MVP-P1] 16.2 운영자 현장 대기 등록
 
 ```http
 POST /api/v1/admin/stores/{storeId}/walk-ins
@@ -1949,7 +1957,7 @@ Idempotency-Key: {key}
 
 ---
 
-## 16.3 고객 호출
+## [MVP-P1] 16.3 고객 호출
 
 ```http
 POST /api/v1/admin/stores/{storeId}/walk-ins/{walkInId}/call
@@ -1987,7 +1995,7 @@ WALK_IN_ALREADY_CALLED
 
 ---
 
-## 16.4 재호출
+## [MVP-P2] 16.4 재호출
 
 ```http
 POST /api/v1/admin/stores/{storeId}/walk-ins/{walkInId}/recall
@@ -1996,7 +2004,7 @@ Idempotency-Key: {key}
 
 ---
 
-## 16.5 대기 보류
+## [MVP-P2] 16.5 대기 보류
 
 ```http
 POST /api/v1/admin/stores/{storeId}/walk-ins/{walkInId}/skip
@@ -2013,7 +2021,7 @@ Idempotency-Key: {key}
 
 ---
 
-## 16.6 대기열 복귀
+## [MVP-P2] 16.6 대기열 복귀
 
 ```http
 POST /api/v1/admin/stores/{storeId}/walk-ins/{walkInId}/restore
@@ -2022,7 +2030,7 @@ Idempotency-Key: {key}
 
 ---
 
-## 16.7 현장 고객 노쇼 처리
+## [MVP-P2] 16.7 현장 고객 노쇼 처리
 
 ```http
 POST /api/v1/admin/stores/{storeId}/walk-ins/{walkInId}/mark-no-show
@@ -2031,7 +2039,7 @@ Idempotency-Key: {key}
 
 ---
 
-## 16.8 대기 순서 변경
+## [MVP-P2] 16.8 대기 순서 변경
 
 ```http
 POST /api/v1/admin/stores/{storeId}/walk-ins/{walkInId}/reorder
@@ -2056,7 +2064,7 @@ Idempotency-Key: {key}
 
 # 17. 서비스 진행 API
 
-## 17.1 예약 서비스 시작
+## [MVP-P1] 17.1 예약 서비스 시작
 
 ```http
 POST /api/v1/admin/stores/{storeId}/reservations/{reservationId}/start-service
@@ -2086,7 +2094,7 @@ Idempotency-Key: {key}
 
 ---
 
-## 17.2 현장 고객 서비스 시작
+## [MVP-P1] 17.2 현장 고객 서비스 시작
 
 ```http
 POST /api/v1/admin/stores/{storeId}/walk-ins/{walkInId}/start-service
@@ -2095,7 +2103,7 @@ Idempotency-Key: {key}
 
 ---
 
-## 17.3 서비스 완료
+## [MVP-P1] 17.3 서비스 완료
 
 ```http
 POST /api/v1/admin/stores/{storeId}/service-sessions/{sessionId}/complete
@@ -2126,7 +2134,7 @@ Idempotency-Key: {key}
 
 ---
 
-## 17.4 서비스 세션 취소
+## [MVP-P2] 17.4 서비스 세션 취소
 
 ```http
 POST /api/v1/admin/stores/{storeId}/service-sessions/{sessionId}/cancel
@@ -2137,7 +2145,7 @@ Idempotency-Key: {key}
 
 # 18. 운영자 예약 대기 API
 
-## 18.1 매장 예약 대기 목록 조회
+## [MVP-P1] 18.1 매장 예약 대기 목록 조회
 
 ```http
 GET /api/v1/admin/stores/{storeId}/waitlists
@@ -2165,7 +2173,7 @@ PRIORITY_DESC
 
 ---
 
-## 18.2 예약 대기 상세 조회
+## [MVP-P1] 18.2 예약 대기 상세 조회
 
 ```http
 GET /api/v1/admin/stores/{storeId}/waitlists/{waitlistId}
@@ -2173,7 +2181,7 @@ GET /api/v1/admin/stores/{storeId}/waitlists/{waitlistId}
 
 ---
 
-## 18.3 수동 빈자리 제안 생성
+## [MVP-P2] 18.3 수동 빈자리 제안 생성
 
 ```http
 POST /api/v1/admin/stores/{storeId}/waitlists/{waitlistId}/offers
@@ -2202,7 +2210,7 @@ RESERVATION_SLOT_ALREADY_TAKEN
 
 ---
 
-## 18.4 빈자리 제안 목록 조회
+## [MVP-P2] 18.4 빈자리 제안 목록 조회
 
 ```http
 GET /api/v1/admin/stores/{storeId}/slot-offers
@@ -2218,7 +2226,7 @@ customerQuery
 
 ---
 
-## 18.5 빈자리 제안 취소
+## [MVP-P2] 18.5 빈자리 제안 취소
 
 ```http
 POST /api/v1/admin/stores/{storeId}/slot-offers/{offerId}/revoke
@@ -2235,7 +2243,7 @@ Idempotency-Key: {key}
 
 ---
 
-## 18.6 다음 대기자에게 제안
+## [MVP-P2] 18.6 다음 대기자에게 제안
 
 ```http
 POST /api/v1/admin/stores/{storeId}/slot-offers/{offerId}/offer-next
