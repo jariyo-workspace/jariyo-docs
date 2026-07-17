@@ -228,6 +228,43 @@ INACTIVE
 
 ---
 
+## 4.4 RefreshToken
+
+로그인 세션별 Refresh Token의 회전과 폐기 이력을 저장한다.
+
+```text
+refresh_token
+- id
+- user_id
+- family_id
+- token_hash
+- status
+- expires_at
+- used_at
+- replaced_by_token_id
+- revoked_at
+- created_at
+```
+
+### status
+
+```text
+ACTIVE
+ROTATED
+REVOKED
+REUSED
+```
+
+### 주요 제약
+
+* 토큰 원문은 저장하지 않고 SHA-256 해시만 저장한다.
+* 같은 토큰 해시는 하나만 존재한다.
+* 재발급 시 기존 토큰을 `ROTATED`로 변경하고 같은 `family_id`로 새 토큰을 만든다.
+* 이미 회전된 토큰이 다시 사용되면 해당 토큰을 `REUSED`로 기록하고 같은 패밀리의 토큰을 모두 폐기한다.
+* 로그아웃 시 현재 토큰이 속한 패밀리를 폐기한다.
+
+---
+
 # 5. 매장 모델
 
 ## 5.1 Store

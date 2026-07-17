@@ -137,6 +137,16 @@ Idempotency-Key: 0190f7c8-92ef-7a52-a284-2ef34dd84155
 
 # 5. 인증 상태 처리
 
+## 토큰 저장
+
+* Access Token은 브라우저 메모리에만 저장한다.
+* Refresh Token은 서버가 발급한 `HttpOnly`, `Secure`, `SameSite=Strict` 쿠키로 관리한다.
+* `localStorage`와 `sessionStorage`에 인증 토큰을 저장하지 않는다.
+* 로그인과 회원가입 응답의 `accessToken`을 이후 인증 요청의 Bearer Token으로 사용한다.
+* 토큰 재발급 요청에는 Refresh Token을 본문에 넣지 않고 쿠키를 자동 전송한다.
+
+---
+
 ## Access Token 만료
 
 다음 오류가 발생하면 토큰 재발급을 시도한다.
