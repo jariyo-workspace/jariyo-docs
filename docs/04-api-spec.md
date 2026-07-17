@@ -346,7 +346,7 @@ POST /api/v1/auth/sign-up
 ```json
 {
   "email": "user@example.com",
-  "password": "password",
+  "password": "long-secure-passphrase",
   "displayName": "류승엽",
   "phoneNumber": "01012345678",
   "agreements": {
@@ -364,9 +364,15 @@ POST /api/v1/auth/sign-up
   "data": {
     "userId": "usr_123",
     "accessToken": "token",
-    "refreshToken": "refresh_token"
+    "expiresIn": 900
   }
 }
+```
+
+Refresh Token은 응답 본문에 포함하지 않고 다음 쿠키로 전달한다.
+
+```http
+Set-Cookie: jariyo_refresh={refreshToken}; HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth; Max-Age=1209600
 ```
 
 ### 오류
@@ -391,7 +397,7 @@ POST /api/v1/auth/sign-in
 ```json
 {
   "email": "user@example.com",
-  "password": "password"
+  "password": "long-secure-passphrase"
 }
 ```
 
@@ -401,11 +407,12 @@ POST /api/v1/auth/sign-in
 {
   "data": {
     "accessToken": "token",
-    "refreshToken": "refresh_token",
-    "expiresIn": 3600
+    "expiresIn": 900
   }
 }
 ```
+
+Refresh Token은 회원가입과 동일한 `jariyo_refresh` 쿠키로 전달한다.
 
 ---
 
@@ -415,13 +422,20 @@ POST /api/v1/auth/sign-in
 POST /api/v1/auth/refresh
 ```
 
-### 요청
+요청 본문은 사용하지 않으며 `jariyo_refresh` 쿠키를 사용한다.
+
+### 응답
 
 ```json
 {
-  "refreshToken": "refresh_token"
+  "data": {
+    "accessToken": "token",
+    "expiresIn": 900
+  }
 }
 ```
+
+재발급에 성공하면 기존 Refresh Token을 폐기하고 같은 이름의 새 쿠키를 발급한다.
 
 ---
 
@@ -430,6 +444,9 @@ POST /api/v1/auth/refresh
 ```http
 POST /api/v1/auth/sign-out
 ```
+
+현재 `jariyo_refresh` 쿠키가 가리키는 로그인 세션을 폐기하고 쿠키를 삭제한다.
+쿠키가 없거나 이미 폐기된 경우에도 성공으로 처리한다.
 
 ---
 
@@ -3073,8 +3090,12 @@ IN_SERVICE → COMPLETED
 
 ```text
 AUTHENTICATION_REQUIRED
+INVALID_CREDENTIALS
 INVALID_ACCESS_TOKEN
 ACCESS_TOKEN_EXPIRED
+INVALID_REFRESH_TOKEN
+REFRESH_TOKEN_EXPIRED
+REFRESH_TOKEN_REUSED
 ACCESS_DENIED
 STORE_ACCESS_DENIED
 RESOURCE_NOT_OWNED_BY_USER
