@@ -195,6 +195,8 @@ Idempotency-Key: {uniqueKey}
 IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_REQUEST
 ```
 
+MVP 백엔드는 PostgreSQL에 `(사용자, API 작업, Idempotency-Key)`, 요청 해시와 성공 응답을 24시간 저장한다. 서버 재시작 뒤에도 같은 요청의 성공 결과를 재반환한다.
+
 ---
 
 ## 2.9 공통 응답 구조
@@ -1363,20 +1365,7 @@ Idempotency-Key: {key}
 }
 ```
 
-### 비회원 요청
-
-```json
-{
-  "storeId": "store_123",
-  "serviceId": "service_123",
-  "preferredStaffId": null,
-  "partySize": 1,
-  "guest": {
-    "name": "류승엽",
-    "phoneNumber": "01012345678"
-  }
-}
-```
+로그인이 필요하다. 비회원은 공개 API로 직접 등록하지 않고 운영자 현장 대기 등록 API를 통해 직원이 대리 접수한다.
 
 ### 응답
 
@@ -1985,8 +1974,7 @@ Idempotency-Key: {key}
 
 ```json
 {
-  "responseTimeoutMinutes": 3,
-  "sendNotification": true
+  "responseTimeoutMinutes": 3
 }
 ```
 
@@ -2009,6 +1997,17 @@ Idempotency-Key: {key}
 WALK_IN_INVALID_STATE
 WALK_IN_ALREADY_CALLED
 ```
+
+---
+
+## [MVP-P1] 16.3.1 현장 고객 수동 체크인
+
+```http
+POST /api/v1/admin/stores/{storeId}/walk-ins/{walkInId}/check-in
+Idempotency-Key: {key}
+```
+
+활성 `STAFF` 이상의 매장 멤버가 `CALLED` 상태 고객을 체크인한다. 비회원 현장 고객은 이 API로만 체크인하며 체크인 방식은 `STAFF_MANUAL`로 기록한다.
 
 ---
 
@@ -2035,6 +2034,23 @@ Idempotency-Key: {key}
   "reason": "고객이 잠시 자리를 비움"
 }
 ```
+
+---
+
+## [MVP-P1] 16.5.1 운영자 현장 대기 취소
+
+```http
+POST /api/v1/admin/stores/{storeId}/walk-ins/{walkInId}/cancel
+Idempotency-Key: {key}
+```
+
+```json
+{
+  "reason": "고객 요청으로 접수 취소"
+}
+```
+
+직원이 대리 등록한 비회원 대기를 포함해 `WAITING`, `CALLED`, `SKIPPED`, `CHECKED_IN` 상태를 취소할 수 있다.
 
 ---
 
@@ -2080,6 +2096,8 @@ Idempotency-Key: {key}
 ---
 
 # 17. 서비스 진행 API
+
+이슈 #10에서는 현장 고객 서비스 시작·완료만 구현한다. 예약 고객 서비스 진행과 예약 노쇼·체크인은 예약 워크스트림 이슈 #9에서 구현한다.
 
 ## [MVP-P1] 17.1 예약 서비스 시작
 
