@@ -1738,13 +1738,26 @@ GET /api/v1/admin/stores/{storeId}/dashboard/today
       {
         "type": "NO_SHOW_CANDIDATE",
         "referenceId": "res_123",
-        "message": "예약 시간이 15분 지났지만 체크인되지 않았어요."
+        "message": "11:00 예약이 아직 체크인되지 않았어요."
+      },
+      {
+        "type": "PENDING_SLOT_OFFER",
+        "referenceId": "offer_123",
+        "message": "응답 대기 중인 빈자리 제안이 있어요."
       }
     ],
     "timeline": []
   }
 }
 ```
+
+### 구현 메모
+
+* `reservationCount`는 당일 `HELD`, `CONFIRMED`, `CHECKED_IN`, `IN_SERVICE`, `COMPLETED`, `NO_SHOW` 예약 수를 집계한다.
+* `waitingWalkInCount`는 당일 `WAITING`, `CALLED`, `SKIPPED` 현장 대기 수를 집계한다.
+* `checkedInCount`와 `inServiceCount`는 예약과 현장 대기를 합산한다.
+* `noShowCandidateCount`는 아직 `CONFIRMED` 상태이면서 매장 `noShowAfterMinutes`를 지난 예약 수다.
+* 현재 구현에서는 `timeline`을 빈 배열로 반환한다.
 
 ---
 
@@ -1765,8 +1778,39 @@ staffId
 serviceId
 status
 customerQuery
-cursor
-limit
+```
+
+`from`, `to`를 생략하면 매장 시간대 기준 당일을 조회한다.
+
+### 응답
+
+```json
+{
+  "data": [
+    {
+      "id": "res_123",
+      "customerName": "홍길동",
+      "serviceName": "커트",
+      "assignedStaffName": "민수",
+      "startAt": "2026-07-24T11:00:00+09:00",
+      "serviceEndAt": "2026-07-24T11:30:00+09:00",
+      "status": "CONFIRMED",
+      "checkInStatus": "NOT_CHECKED_IN",
+      "partySize": 1
+    }
+  ]
+}
+```
+
+### checkInStatus
+
+```text
+NOT_CHECKED_IN
+CHECKED_IN
+IN_SERVICE
+COMPLETED
+NO_SHOW
+CANCELLED
 ```
 
 ---
@@ -2175,17 +2219,30 @@ date
 serviceId
 staffId
 status
-sort
-cursor
-limit
 ```
 
-### sort
+`date`를 생략하면 매장 시간대 기준 당일을 조회한다.
 
-```text
-SEQUENCE_ASC
-CREATED_AT_ASC
-PRIORITY_DESC
+### 응답
+
+```json
+{
+  "data": [
+    {
+      "id": "wait_123",
+      "customerName": "홍길동",
+      "serviceName": "펌",
+      "preferredStaffName": "수진",
+      "desiredDate": "2026-07-24",
+      "acceptableStartTime": "14:00",
+      "acceptableEndTime": "16:00",
+      "status": "WAITING",
+      "sequenceNumber": 3,
+      "pendingOffer": false,
+      "pendingOfferExpiresAt": null
+    }
+  ]
+}
 ```
 
 ---

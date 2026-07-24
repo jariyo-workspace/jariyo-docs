@@ -905,6 +905,11 @@ GET /api/v1/admin/stores/{storeId}/dashboard/today
 
 경고 카드 클릭 시 관련 상세 화면으로 이동한다.
 
+### 현재 응답 메모
+
+* `alerts[].type`은 현재 `NO_SHOW_CANDIDATE`, `PENDING_SLOT_OFFER`를 사용한다.
+* `timeline`은 현재 빈 배열로 내려오므로 첫 화면은 summary와 alert 중심으로 구성한다.
+
 ---
 
 ## 8.2 예약 캘린더
@@ -934,6 +939,49 @@ status
 * 체크인 상태
 
 상태 변경 후에는 전체 캘린더를 무조건 재호출하기보다 해당 예약 상세과 관련 기간 목록을 갱신한다.
+
+### 현재 목록 응답 필드
+
+* `customerName`
+* `serviceName`
+* `assignedStaffName`
+* `startAt`
+* `serviceEndAt`
+* `status`
+* `checkInStatus`
+* `partySize`
+
+`checkInStatus`는 예약 상태와 별도 배지 표시에 사용하며 `NOT_CHECKED_IN`, `CHECKED_IN`, `IN_SERVICE`, `COMPLETED`, `NO_SHOW`, `CANCELLED` 중 하나다.
+
+---
+
+## 8.2.1 운영자 예약 대기열
+
+```http
+GET /api/v1/admin/stores/{storeId}/waitlists
+```
+
+### 쿼리
+
+```text
+date
+serviceId
+staffId
+status
+```
+
+### 카드 주요 정보
+
+* 고객명
+* 서비스
+* 희망 직원
+* 희망 날짜
+* 허용 시간 범위
+* 대기 상태
+* 순번
+* 빈자리 제안 대기 여부
+
+`pendingOffer`가 `true`면 `pendingOfferExpiresAt`을 함께 사용해 응답 만료 시각을 표시한다.
 
 ---
 
