@@ -1619,6 +1619,8 @@ stateDiagram-v2
 
 ## 시나리오 1. 고객이 일반 예약을 생성한다
 
+MVP-P0 일반 예약은 결제나 추가 확인 단계가 없으므로 홀드를 거치지 않고 즉시 확정한다.
+
 ### 1단계: 요청 중복 확인
 
 `reservation_request`를 생성한다.
@@ -1630,37 +1632,35 @@ request_type = CREATE_RESERVATION
 
 같은 요청 키가 이미 완료됐다면 기존 예약 결과를 반환한다.
 
-### 2단계: 예약 홀드 생성
+### 2단계: 충돌 확인과 예약 확정
 
-```text
-reservation.status = HELD
-reservation.hold_expires_at = 현재 시각 + 홀드 유지 시간
-```
-
-동시에 만료 작업을 만든다.
-
-```text
-scheduled_job.job_type = EXPIRE_RESERVATION_HOLD
-```
-
-### 3단계: 예약 확정
-
-고객이 필요한 절차를 마치면 다음처럼 변경한다.
+같은 직원과 고객의 활성 예약이 겹치는지 트랜잭션 안에서 다시 확인한 뒤 예약과 상태 이력을 함께 저장한다.
 
 ```text
 reservation.status = CONFIRMED
 reservation.confirmed_at = 현재 시각
+
+reservation_status_history.previous_status = null
+reservation_status_history.next_status = CONFIRMED
+reservation_status_history.reason_code = CREATED
 ```
 
-홀드 만료 작업은 취소한다.
-
-### 4단계: 후속 이벤트
+### 3단계: 후속 이벤트
 
 ```text
 domain_event.event_type = RESERVATION_CONFIRMED
 ```
 
 이 이벤트로 알림과 리마인더를 생성한다.
+
+### 후속 예약 홀드 흐름
+
+결제나 추가 확인 단계가 필요해지면 다음 흐름을 별도 후속 작업으로 구현한다.
+
+1. `HELD` 예약과 `hold_expires_at` 생성
+2. `CONFIRMED` 확정 또는 `EXPIRED` 자동 만료
+3. 확정과 만료의 동시 처리 충돌 방지
+4. 각 상태 전이 이력 저장
 
 ---
 
@@ -1696,6 +1696,17 @@ CONFIRMED → CANCELLED
 cancelled_at
 cancellation_reason
 cancelled_by_type = CUSTOMER
+```
+
+`cancellation_reason`에는 고객이 입력한 자유 문장만 저장하며 별도의 고객 취소 사유 분류 코드는 두지 않는다.
+
+상태 이력에는 다음 값을 기록한다.
+
+```text
+previous_status = CONFIRMED
+next_status = CANCELLED
+changed_by_type = CUSTOMER
+reason_code = CUSTOMER_CANCELLED
 ```
 
 그리고 다음 이벤트를 만든다.
