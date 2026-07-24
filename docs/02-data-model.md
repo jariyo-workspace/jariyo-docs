@@ -918,6 +918,8 @@ walk_in_entry
 
 비회원 현장 접수를 허용하면 `guest_name`, `guest_phone_number`를 사용한다.
 
+MVP 이슈 #10에서는 로그인 고객의 직접 등록과 직원의 비회원 대리 등록만 허용한다. 비회원에게 공개 관리 토큰을 발급하지 않으며, 비회원의 호출 응답과 체크인은 매장 직원이 처리한다.
+
 ### status
 
 ```text
@@ -1059,6 +1061,8 @@ CANCELLED
 * 잘못된 체크인의 취소
 * 체크인 방식 분석
 
+MVP 이슈 #10에서는 `walk_in_entry_id`를 참조하는 현장 체크인부터 구현한다. `reservation_id`를 사용하는 예약 체크인은 예약 워크스트림 이슈 #9에서 스키마와 외래 키를 확장한다.
+
 ---
 
 ## 10.2 CheckInToken
@@ -1140,6 +1144,28 @@ CANCELLED
 예약은 예정된 약속이고, 서비스 세션은 실제 이용 기록이다.
 
 예를 들어 고객이 14시 예약이지만 14시 15분에 서비스를 시작해 15시에 끝날 수 있다. 예약 데이터만으로는 실제 운영 성과를 정확히 측정하기 어렵다.
+
+MVP 이슈 #10의 서비스 세션은 현장 대기만 참조한다. 예약 서비스 세션은 예약 워크스트림 이슈 #9에서 같은 생명주기 규칙으로 확장한다.
+
+---
+
+## 11.2 WalkInStatusHistory
+
+현장 대기의 모든 상태 전이를 별도 이력으로 저장한다.
+
+```text
+walk_in_status_history
+- id
+- walk_in_entry_id
+- previous_status
+- new_status
+- actor_type
+- actor_id
+- reason
+- occurred_at
+```
+
+등록 시 `previous_status`는 비어 있고 이후에는 변경 전·후 상태를 모두 기록한다. 고객, 매장 직원, 시스템 처리를 `actor_type`으로 구분한다.
 
 ---
 

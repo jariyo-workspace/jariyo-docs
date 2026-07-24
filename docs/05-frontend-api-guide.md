@@ -723,6 +723,8 @@ GET /api/v1/stores/{storeId}/walk-in-status
 POST /api/v1/walk-ins
 ```
 
+로그인 고객 전용이다. 비회원 셀프 등록과 비회원 관리 토큰은 MVP에서 제공하지 않으며, 비회원은 매장 직원이 운영자 API로 대신 등록한다.
+
 ### 요청
 
 ```json
@@ -1022,14 +1024,20 @@ POST /api/v1/admin/stores/{storeId}/walk-ins/{walkInId}/call
 
 ```json
 {
-  "responseTimeoutMinutes": 3,
-  "sendNotification": true
+  "responseTimeoutMinutes": 3
 }
 ```
 
 ### 성공
 
 상태를 `CALLED`로 변경하고 타이머를 표시한다.
+
+비회원 또는 직원 확인이 필요한 고객은 호출 후 다음 API로 수동 체크인한다.
+
+```http
+POST /api/v1/admin/stores/{storeId}/walk-ins/{walkInId}/check-in
+Idempotency-Key: {key}
+```
 
 ### 주요 오류
 
@@ -1041,6 +1049,13 @@ POST /api/v1/admin/stores/{storeId}/walk-ins/{walkInId}/call
 ---
 
 ## 8.8 현장 대기 보류 및 복귀
+
+운영자 취소:
+
+```http
+POST /api/v1/admin/stores/{storeId}/walk-ins/{walkInId}/cancel
+Idempotency-Key: {key}
+```
 
 보류:
 
