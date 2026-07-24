@@ -395,6 +395,8 @@ staffId
 
 ## 6.7 예약 확인 및 생성
 
+MVP-P0 예약은 홀드 단계 없이 즉시 `CONFIRMED`로 생성된다. `HELD` 상태와 예약 확정 UI는 후속 예약 홀드 기능이 구현된 뒤 사용한다.
+
 ```http
 POST /api/v1/reservations
 ```
@@ -469,9 +471,10 @@ GET /api/v1/me/reservations
 status
 from
 to
-cursor
-limit
 ```
+
+날짜 필터는 예약 매장의 시간대 기준이며 양 끝 날짜를 포함한다. 목록은 최근 예약 시작 시각부터 표시한다.
+페이지네이션은 후속 기능에서 `cursor`, `limit`, `nextCursor` 계약과 함께 추가한다.
 
 ### 상태별 분류
 
@@ -520,6 +523,8 @@ GET /api/v1/reservations/{reservationId}
 
 `canCancel === true`일 때만 활성화한다.
 
+예약 체크인 API가 구현되기 전까지 `checkInAvailable`은 항상 `false`다.
+
 ---
 
 ## 6.10 예약 취소
@@ -532,10 +537,11 @@ POST /api/v1/reservations/{reservationId}/cancel
 
 ```json
 {
-  "reasonCode": "CUSTOMER_SCHEDULE_CHANGED",
   "reason": "개인 일정이 생겼습니다."
 }
 ```
+
+`reason`은 255자 이하의 필수 자유 문장이다.
 
 ### 성공
 
