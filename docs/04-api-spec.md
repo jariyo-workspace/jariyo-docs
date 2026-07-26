@@ -2874,7 +2874,6 @@ type
 status
 from
 to
-cursor
 limit
 ```
 
@@ -2885,7 +2884,7 @@ limit
   "data": [
     {
       "id": "job_123",
-      "type": "SEND_NOTIFICATION",
+      "type": "SLOT_OFFER_CREATED",
       "referenceType": "RESERVATION",
       "referenceId": "res_123",
       "status": "FAILED",

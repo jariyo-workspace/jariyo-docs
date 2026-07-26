@@ -1332,6 +1332,8 @@ SYSTEM
 
 예약, 대기, 호출 상태 변경 이후 수행할 후속 작업을 기록한다.
 
+MVP 구현에서는 이 모델을 `async_event_outbox` 테이블로 구체화한다.
+
 ```text
 domain_event
 - id
@@ -1378,6 +1380,25 @@ FAILED
 * 운영 통계 갱신
 * 예약 리마인더 생성
 * 노쇼 통계 갱신
+
+### MVP 구체화 컬럼
+
+```text
+async_event_outbox
+- id
+- type
+- store_id
+- reference_type
+- reference_id
+- payload_json
+- status
+- attempt_count
+- processed_at
+- last_error_code
+- last_error_message
+- created_at
+- updated_at
+```
 
 ---
 
@@ -1449,6 +1470,39 @@ CANCELLED
 예약 홀드 만료나 빈자리 제안 만료를 단순 메모리 타이머로 처리하면 서버가 재시작될 때 작업이 유실될 수 있다.
 
 예약 상태와 별도의 지속 가능한 작업 레코드로 관리한다.
+
+## 14.4 FailedAsyncJob
+
+비동기 이벤트 발행이나 알림 후속 처리 실패를 운영 관점에서 추적하는 레코드다.
+
+```text
+failed_async_job
+- id
+- store_id
+- type
+- reference_type
+- reference_id
+- status
+- attempt_count
+- last_error_code
+- last_error_message
+- failed_at
+- ignored_reason
+- created_at
+- updated_at
+```
+
+### status
+
+```text
+FAILED
+RESOLVED
+IGNORED
+```
+
+### 설계 이유
+
+실패 이력을 outbox와 분리해 두면 운영자가 최근 실패 건을 빠르게 조회하고 재처리 결과를 별도로 추적할 수 있다.
 
 ---
 
@@ -2054,8 +2108,8 @@ audit_log
 ## 비동기 처리 단계에서 추가할 모델
 
 ```text
-domain_event
-processed_event
+async_event_outbox
+failed_async_job
 scheduled_job
 notification_attempt
 check_in_token
