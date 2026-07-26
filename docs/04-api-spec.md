@@ -712,6 +712,8 @@ WAITLIST_AVAILABLE
 
 ## [MVP-P0] 7.1 예약 생성
 
+MVP-P0 일반 예약은 홀드 없이 즉시 `CONFIRMED`로 생성한다.
+
 ```http
 POST /api/v1/reservations
 Idempotency-Key: {key}
@@ -776,6 +778,8 @@ INVALID_PARTY_SIZE
 ## [MVP-P1] 7.2 예약 홀드 생성
 
 결제나 추가 확인 단계가 필요한 경우 사용할 수 있다.
+
+예약 홀드 생성·확정·만료는 MVP-P0 예약 워크스트림 이후의 후속 기능이다.
 
 ```http
 POST /api/v1/reservation-holds
@@ -849,9 +853,12 @@ GET /api/v1/me/reservations
 status
 from
 to
-cursor
-limit
 ```
+
+`from`, `to`는 각 예약 매장의 시간대로 계산한 예약 시작 날짜에 양 끝을 포함해 적용한다.
+결과는 `startAt DESC`, `id DESC` 순서로 반환한다.
+
+`cursor`, `limit`, `nextCursor` 기반 페이지네이션은 후속 기능에서 함께 정의한다.
 
 ### 예시
 
@@ -942,10 +949,11 @@ Idempotency-Key: {key}
 
 ```json
 {
-  "reasonCode": "CUSTOMER_SCHEDULE_CHANGED",
   "reason": "개인 일정이 생겼습니다."
 }
 ```
+
+`reason`은 255자 이하의 필수 자유 문장이다. 별도의 고객 취소 사유 분류 코드는 받지 않는다.
 
 ### 응답
 
@@ -971,7 +979,7 @@ RESERVATION_NOT_OWNED_BY_USER
 
 ---
 
-## [MVP-P1] 7.7 예약 상태 이력 조회
+## [MVP-P0] 7.7 예약 상태 이력 조회
 
 ```http
 GET /api/v1/reservations/{reservationId}/history
@@ -988,6 +996,14 @@ GET /api/v1/reservations/{reservationId}/history
       "changedByType": "CUSTOMER",
       "reasonCode": "CREATED",
       "occurredAt": "2026-07-11T10:00:00+09:00"
+    },
+    {
+      "previousStatus": "CONFIRMED",
+      "nextStatus": "CANCELLED",
+      "changedByType": "CUSTOMER",
+      "reasonCode": "CUSTOMER_CANCELLED",
+      "note": "개인 일정이 생겼습니다.",
+      "occurredAt": "2026-07-15T13:00:00+09:00"
     }
   ]
 }
@@ -3234,10 +3250,12 @@ OPERATION_TIMEOUT
 
 목록 API는 cursor 기반 페이지네이션을 기본으로 한다.
 
+단, MVP-P0의 `GET /api/v1/me/reservations`는 전체 목록과 필터만 제공한다. 이 API의 cursor 페이지네이션은 후속 기능에서 응답 계약과 함께 추가한다.
+
 ### 요청
 
 ```http
-GET /api/v1/me/reservations?limit=20&cursor=abc
+GET /api/v1/stores?limit=20&cursor=abc
 ```
 
 ### 응답
