@@ -2796,6 +2796,32 @@ to
 GET /api/v1/admin/stores/{storeId}/analytics/reservations/daily
 ```
 
+### 쿼리
+
+```text
+from
+to
+```
+
+### 응답
+
+```json
+{
+  "data": [
+    {
+      "date": "2026-07-26",
+      "reservationCount": 18,
+      "confirmedCount": 6,
+      "checkedInCount": 2,
+      "inServiceCount": 1,
+      "completedCount": 7,
+      "cancelledCount": 1,
+      "noShowCount": 1
+    }
+  ]
+}
+```
+
 ---
 
 ## 25.3 직원별 운영 통계
@@ -2804,12 +2830,62 @@ GET /api/v1/admin/stores/{storeId}/analytics/reservations/daily
 GET /api/v1/admin/stores/{storeId}/analytics/staff
 ```
 
+### 쿼리
+
+```text
+from
+to
+```
+
+### 응답
+
+```json
+{
+  "data": [
+    {
+      "staffId": "member_123",
+      "staffName": "민지",
+      "reservationCount": 24,
+      "completedReservationCount": 18,
+      "cancelledReservationCount": 3,
+      "noShowReservationCount": 1,
+      "completedWalkInServiceCount": 5,
+      "averageCompletedWalkInServiceMinutes": 42
+    }
+  ]
+}
+```
+
 ---
 
 ## 25.4 서비스별 실제 소요 시간
 
 ```http
 GET /api/v1/admin/stores/{storeId}/analytics/services/duration
+```
+
+### 쿼리
+
+```text
+from
+to
+```
+
+### 응답
+
+```json
+{
+  "data": [
+    {
+      "serviceId": "service_123",
+      "serviceName": "커트",
+      "sessionCount": 12,
+      "expectedDurationMinutes": 30,
+      "averageActualDurationMinutes": 34,
+      "averageDurationDeltaMinutes": 4
+    }
+  ]
+}
 ```
 
 ---
