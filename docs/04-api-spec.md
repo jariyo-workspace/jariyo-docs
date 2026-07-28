@@ -778,6 +778,7 @@ INVALID_PARTY_SIZE
 ## [MVP-P1] 7.2 예약 홀드 생성
 
 결제나 추가 확인 단계가 필요한 경우 사용할 수 있다.
+기존 `POST /api/v1/reservations`의 즉시 확정 흐름은 유지한다.
 
 예약 홀드 생성·확정·만료는 MVP-P0 예약 워크스트림 이후의 후속 기능이다.
 
@@ -800,6 +801,8 @@ Idempotency-Key: {key}
 
 ### 응답
 
+`201 Created`
+
 ```json
 {
   "data": {
@@ -809,6 +812,22 @@ Idempotency-Key: {key}
   }
 }
 ```
+
+### 오류
+
+```text
+STORE_NOT_ACTIVE
+SERVICE_NOT_ACTIVE
+STAFF_NOT_AVAILABLE
+RESERVATION_SLOT_ALREADY_TAKEN
+RESERVATION_OUTSIDE_BOOKING_WINDOW
+RESERVATION_TOO_CLOSE_TO_START
+CUSTOMER_HAS_OVERLAPPING_RESERVATION
+INVALID_PARTY_SIZE
+```
+
+홀드가 생성되면 `holdExpiresAt` 전까지 해당 직원과 고객의 시간 슬롯을 활성 예약처럼 점유한다.
+같은 `Idempotency-Key`와 같은 요청을 재시도하면 기존 홀드 결과를 반환한다.
 
 ---
 
@@ -838,6 +857,10 @@ RESERVATION_HOLD_EXPIRED
 RESERVATION_INVALID_STATE
 RESERVATION_SLOT_ALREADY_TAKEN
 ```
+
+`holdExpiresAt`과 같은 시각부터 홀드는 만료된 것으로 판단한다.
+확정과 만료 처리는 예약 행 잠금으로 직렬화되므로 하나의 상태 전이만 성공한다.
+같은 `Idempotency-Key`로 성공한 확정 요청을 재시도하면 기존 확정 결과를 반환한다.
 
 ---
 

@@ -456,6 +456,32 @@ Idempotency-Key: {key}
 
 ---
 
+## 6.7.1 예약 홀드와 확정
+
+결제 또는 추가 확인이 필요한 화면에서는 즉시 확정 API 대신 다음 두 단계를 사용한다.
+
+```http
+POST /api/v1/reservation-holds
+Idempotency-Key: {key}
+```
+
+성공 응답의 `reservationId`와 `holdExpiresAt`을 보관하고 남은 시간을 표시한다.
+추가 절차가 완료되면 별도의 멱등성 키로 확정한다.
+
+```http
+POST /api/v1/reservations/{reservationId}/confirm
+Idempotency-Key: {key}
+```
+
+`RESERVATION_HOLD_EXPIRED`가 반환되면 확정을 재시도하지 않고 시간 선택 화면으로 이동해
+예약 가능 시간을 다시 조회한다. `RESERVATION_INVALID_STATE`는 내 예약 상세를 다시 조회해
+서버 상태와 화면을 동기화한다.
+
+네트워크 오류로 결과를 확인하지 못했다면 같은 요청과 같은 `Idempotency-Key`로 재시도한다.
+새 홀드를 즉시 생성하면 같은 슬롯에 대한 중복 요청이 될 수 있다.
+
+---
+
 ## 6.8 내 예약 목록
 
 ```http

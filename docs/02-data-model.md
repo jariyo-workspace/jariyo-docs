@@ -630,6 +630,10 @@ CHECKED_IN
 IN_SERVICE
 ```
 
+단, `HELD`는 `hold_expires_at > 현재 시각`인 동안에만 활성 예약으로 취급한다.
+스케줄러가 아직 `EXPIRED` 상태로 갱신하지 않았더라도 만료 시각이 지난 홀드는
+새 예약과 예약 가능 시간 조회를 막지 않는다.
+
 다음 상태는 새로운 예약을 막지 않는다.
 
 ```text
@@ -1426,7 +1430,7 @@ consumer_name + event_id 조합은 하나만 존재한다.
 
 ## 14.3 ScheduledJob
 
-특정 시각에 처리해야 하는 작업이다.
+특정 시각에 처리해야 하는 작업을 확장할 때 사용하는 목표 모델이다.
 
 ```text
 scheduled_job
@@ -1469,7 +1473,42 @@ CANCELLED
 
 예약 홀드 만료나 빈자리 제안 만료를 단순 메모리 타이머로 처리하면 서버가 재시작될 때 작업이 유실될 수 있다.
 
-예약 상태와 별도의 지속 가능한 작업 레코드로 관리한다.
+현재 MVP 구현은 `reservation.hold_expires_at`, `slot_offer.expires_at`처럼 원본 엔티티에 저장된
+만료 시각을 스케줄러가 다시 조회하는 방식으로 재시작 내구성을 확보한다. 재시도 정책,
+분산 worker 잠금과 작업별 운영 화면이 필요해지면 위 `scheduled_job` 모델로 분리한다.
+
+## 14.4 FailedAsyncJob
+
+비동기 이벤트 발행이나 알림 후속 처리 실패를 운영 관점에서 추적하는 레코드다.
+
+```text
+failed_async_job
+- id
+- store_id
+- type
+- reference_type
+- reference_id
+- status
+- attempt_count
+- last_error_code
+- last_error_message
+- failed_at
+- ignored_reason
+- created_at
+- updated_at
+```
+
+### status
+
+```text
+FAILED
+RESOLVED
+IGNORED
+```
+
+### 설계 이유
+
+실패 이력을 outbox와 분리해 두면 운영자가 최근 실패 건을 빠르게 조회하고 재처리 결과를 별도로 추적할 수 있다.
 
 ## 14.4 FailedAsyncJob
 
@@ -1711,10 +1750,39 @@ domain_event.event_type = RESERVATION_CONFIRMED
 
 결제나 추가 확인 단계가 필요해지면 다음 흐름을 별도 후속 작업으로 구현한다.
 
-1. `HELD` 예약과 `hold_expires_at` 생성
-2. `CONFIRMED` 확정 또는 `EXPIRED` 자동 만료
-3. 확정과 만료의 동시 처리 충돌 방지
-4. 각 상태 전이 이력 저장
+#### 1단계: 예약 홀드 생성
+
+```text
+reservation.status = HELD
+reservation.hold_expires_at = 현재 시각 + 홀드 유지 시간
+```
+
+`reservation` 행의 `hold_expires_at`이 만료 작업의 지속 가능한 기준이 된다.
+현재 구현은 주기적으로 만료된 `HELD` 행을 조회하고 잠근 뒤 `EXPIRED`로 전이한다.
+
+```text
+reservation.status = HELD
+reservation.hold_expires_at <= 현재 시각
+→ reservation.status = EXPIRED
+```
+
+#### 2단계: 예약 확정
+
+고객이 필요한 절차를 마치면 다음처럼 변경한다.
+
+```text
+reservation.status = CONFIRMED
+reservation.confirmed_at = 현재 시각
+```
+
+확정과 만료 작업은 같은 예약 행을 잠근다. 확정이 먼저 성공하면 만료 스캔은
+`CONFIRMED` 상태를 확인하고 건너뛰며, 만료가 먼저 성공하면 이후 확정 요청은 거절한다.
+
+#### 3단계: 후속 이벤트와 상태 이력
+
+1. `CONFIRMED` 확정 또는 `EXPIRED` 자동 만료
+2. 확정과 만료의 동시 처리 충돌 방지
+3. 각 상태 전이 이력 저장
 
 ---
 
