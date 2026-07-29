@@ -1470,6 +1470,7 @@ failed_async_job
 ### status
 
 ```text
+PENDING
 FAILED
 RESOLVED
 IGNORED

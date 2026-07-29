@@ -2926,6 +2926,7 @@ type
 status
 from
 to
+cursor
 limit
 ```
 
@@ -2945,9 +2946,14 @@ limit
         "code": "PROVIDER_TIMEOUT",
         "message": "알림 제공자 응답 시간이 초과되었습니다."
       },
-      "failedAt": "2026-07-11T14:00:00+09:00"
+      "failedAt": "2026-07-11T14:00:00+09:00",
+      "ignoredReason": null
     }
-  ]
+  ],
+  "page": {
+    "cursor": "job_123",
+    "hasNext": true
+  }
 }
 ```
 
@@ -2957,6 +2963,30 @@ limit
 
 ```http
 GET /api/v1/admin/stores/{storeId}/failed-jobs/{jobId}
+```
+
+### 응답
+
+```json
+{
+  "data": {
+    "id": "job_123",
+    "type": "SLOT_OFFER_CREATED",
+    "referenceType": "RESERVATION",
+    "referenceId": "res_123",
+    "status": "FAILED",
+    "attemptCount": 5,
+    "lastError": {
+      "code": "PROVIDER_TIMEOUT",
+      "message": "알림 제공자 응답 시간이 초과되었습니다."
+    },
+    "failedAt": "2026-07-11T14:00:00+09:00",
+    "ignoredReason": null,
+    "outboxEventId": "evt_123",
+    "outboxStatus": "FAILED",
+    "payloadJson": "{\"slotOfferId\":\"slot_123\"}"
+  }
+}
 ```
 
 ---
@@ -2992,6 +3022,18 @@ POST /api/v1/admin/stores/{storeId}/failed-jobs/{jobId}/ignore
 ```json
 {
   "reason": "고객에게 전화로 직접 안내 완료"
+}
+```
+
+### 응답
+
+```json
+{
+  "data": {
+    "jobId": "job_123",
+    "status": "IGNORED",
+    "ignoredReason": "고객에게 전화로 직접 안내 완료"
+  }
 }
 ```
 
