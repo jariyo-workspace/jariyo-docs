@@ -1266,6 +1266,7 @@ audit_log
 - action
 - target_type
 - target_id
+- reason
 - previous_data
 - changed_data
 - request_id
