@@ -490,14 +490,30 @@ GET /api/v1/me/reservations
 
 ### 쿼리
 
-```text
-status
-from
-to
+| 이름 | 설명 |
+| --- | --- |
+| `status` | 예약 상태 필터 |
+| `from` | 매장 현지 날짜 기준 시작일, 포함 |
+| `to` | 매장 현지 날짜 기준 종료일, 포함 |
+| `cursor` | 이전 응답의 `page.cursor` |
+| `limit` | 기본 20, 최대 100 |
+
+정렬은 `startAt DESC, id DESC`로 고정된다. 첫 요청에서는 `cursor`를 생략하고,
+`page.hasNext === true`이면 받은 `page.cursor`를 다음 요청에 그대로 전달한다.
+커서는 해석하거나 수정하지 않으며 다음 페이지에서도 동일한 상태·날짜 필터를 유지한다.
+
+```json
+{
+  "data": [],
+  "page": {
+    "cursor": "opaque_cursor",
+    "hasNext": true
+  }
+}
 ```
 
-날짜 필터는 예약 매장의 시간대 기준이며 양 끝 날짜를 포함한다. 목록은 최근 예약 시작 시각부터 표시한다.
-페이지네이션은 후속 기능에서 `cursor`, `limit`, `nextCursor` 계약과 함께 추가한다.
+필터를 변경하거나 목록을 새로고침할 때는 기존 cursor를 버리고 첫 페이지부터 조회한다.
+`COMMON-400`이 반환되면 저장한 cursor를 제거하고 첫 페이지를 다시 요청한다.
 
 ### 상태별 분류
 

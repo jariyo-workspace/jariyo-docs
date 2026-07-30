@@ -1301,6 +1301,7 @@ audit_log
 - changed_data
 - request_id
 - occurred_at
+- created_at
 ```
 
 ### actor_type
@@ -1328,6 +1329,8 @@ SYSTEM
 모든 조회를 감사 로그에 저장할 필요는 없다.
 
 비즈니스 상태나 권한에 영향을 주는 변경을 중심으로 기록한다.
+
+매장별 최신 감사 로그 조회를 위해 `(store_id, occurred_at DESC, id DESC)` 인덱스를 둔다.
 
 ---
 
@@ -2080,8 +2083,12 @@ status
 ```text
 customer_id
 start_at
-status
+id
 ```
+
+`내 예약` 목록은 `start_at DESC, id DESC` keyset pagination을 사용한다.
+이를 위해 `(customer_id, start_at DESC, id DESC)` 복합 인덱스를 둔다.
+상태와 매장 현지 날짜 조건은 같은 조회에 함께 적용한다.
 
 ## 매장 일별 운영 화면
 
