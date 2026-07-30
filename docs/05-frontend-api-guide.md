@@ -137,16 +137,6 @@ Idempotency-Key: 0190f7c8-92ef-7a52-a284-2ef34dd84155
 
 # 5. 인증 상태 처리
 
-## 토큰 저장
-
-* Access Token은 브라우저 메모리에만 저장한다.
-* Refresh Token은 서버가 발급한 `HttpOnly`, `Secure`, `SameSite=Strict` 쿠키로 관리한다.
-* `localStorage`와 `sessionStorage`에 인증 토큰을 저장하지 않는다.
-* 로그인과 회원가입 응답의 `accessToken`을 이후 인증 요청의 Bearer Token으로 사용한다.
-* 토큰 재발급 요청에는 Refresh Token을 본문에 넣지 않고 쿠키를 자동 전송한다.
-
----
-
 ## Access Token 만료
 
 다음 오류가 발생하면 토큰 재발급을 시도한다.
@@ -372,6 +362,13 @@ staffId
 }
 ```
 
+### 계산 규칙
+
+* 슬롯 시작 시각은 30분 단위다.
+* `staffId` 없이 조회하면 예약 가능한 직원별 슬롯이 함께 내려온다.
+* 같은 시작 시각이면 직원명 오름차순으로 정렬된다.
+* `occupiedUntil`까지는 같은 직원의 다음 예약이 불가능하다고 본다.
+
 ### 슬롯 상태
 
 | 상태                   | 화면 처리       |
@@ -394,6 +391,8 @@ staffId
 ---
 
 ## 6.7 예약 확인 및 생성
+
+MVP-P0 예약은 홀드 단계 없이 즉시 `CONFIRMED`로 생성된다. `HELD` 상태와 예약 확정 UI는 후속 예약 홀드 기능이 구현된 뒤 사용한다.
 
 ```http
 POST /api/v1/reservations
@@ -454,6 +453,32 @@ Idempotency-Key: {key}
 ```
 
 이후 내 예약 API를 조회한다.
+
+---
+
+## 6.7.1 예약 홀드와 확정
+
+결제 또는 추가 확인이 필요한 화면에서는 즉시 확정 API 대신 다음 두 단계를 사용한다.
+
+```http
+POST /api/v1/reservation-holds
+Idempotency-Key: {key}
+```
+
+성공 응답의 `reservationId`와 `holdExpiresAt`을 보관하고 남은 시간을 표시한다.
+추가 절차가 완료되면 별도의 멱등성 키로 확정한다.
+
+```http
+POST /api/v1/reservations/{reservationId}/confirm
+Idempotency-Key: {key}
+```
+
+`RESERVATION_HOLD_EXPIRED`가 반환되면 확정을 재시도하지 않고 시간 선택 화면으로 이동해
+예약 가능 시간을 다시 조회한다. `RESERVATION_INVALID_STATE`는 내 예약 상세를 다시 조회해
+서버 상태와 화면을 동기화한다.
+
+네트워크 오류로 결과를 확인하지 못했다면 같은 요청과 같은 `Idempotency-Key`로 재시도한다.
+새 홀드를 즉시 생성하면 같은 슬롯에 대한 중복 요청이 될 수 있다.
 
 ---
 
@@ -537,6 +562,8 @@ GET /api/v1/reservations/{reservationId}
 
 `canCancel === true`일 때만 활성화한다.
 
+예약 체크인 API가 구현되기 전까지 `checkInAvailable`은 항상 `false`다.
+
 ---
 
 ## 6.10 예약 취소
@@ -549,10 +576,11 @@ POST /api/v1/reservations/{reservationId}/cancel
 
 ```json
 {
-  "reasonCode": "CUSTOMER_SCHEDULE_CHANGED",
   "reason": "개인 일정이 생겼습니다."
 }
 ```
+
+`reason`은 255자 이하의 필수 자유 문장이다.
 
 ### 성공
 
@@ -742,6 +770,8 @@ GET /api/v1/stores/{storeId}/walk-in-status
 ```http
 POST /api/v1/walk-ins
 ```
+
+로그인 고객 전용이다. 비회원 셀프 등록과 비회원 관리 토큰은 MVP에서 제공하지 않으며, 비회원은 매장 직원이 운영자 API로 대신 등록한다.
 
 ### 요청
 
@@ -1090,14 +1120,20 @@ POST /api/v1/admin/stores/{storeId}/walk-ins/{walkInId}/call
 
 ```json
 {
-  "responseTimeoutMinutes": 3,
-  "sendNotification": true
+  "responseTimeoutMinutes": 3
 }
 ```
 
 ### 성공
 
 상태를 `CALLED`로 변경하고 타이머를 표시한다.
+
+비회원 또는 직원 확인이 필요한 고객은 호출 후 다음 API로 수동 체크인한다.
+
+```http
+POST /api/v1/admin/stores/{storeId}/walk-ins/{walkInId}/check-in
+Idempotency-Key: {key}
+```
 
 ### 주요 오류
 
@@ -1109,6 +1145,13 @@ POST /api/v1/admin/stores/{storeId}/walk-ins/{walkInId}/call
 ---
 
 ## 8.8 현장 대기 보류 및 복귀
+
+운영자 취소:
+
+```http
+POST /api/v1/admin/stores/{storeId}/walk-ins/{walkInId}/cancel
+Idempotency-Key: {key}
+```
 
 보류:
 

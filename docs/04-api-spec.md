@@ -195,6 +195,8 @@ Idempotency-Key: {uniqueKey}
 IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_REQUEST
 ```
 
+MVP 백엔드는 PostgreSQL에 `(사용자, API 작업, Idempotency-Key)`, 요청 해시와 성공 응답을 24시간 저장한다. 서버 재시작 뒤에도 같은 요청의 성공 결과를 재반환한다.
+
 ---
 
 ## 2.9 공통 응답 구조
@@ -346,7 +348,7 @@ POST /api/v1/auth/sign-up
 ```json
 {
   "email": "user@example.com",
-  "password": "long-secure-passphrase",
+  "password": "password",
   "displayName": "류승엽",
   "phoneNumber": "01012345678",
   "agreements": {
@@ -364,15 +366,9 @@ POST /api/v1/auth/sign-up
   "data": {
     "userId": "usr_123",
     "accessToken": "token",
-    "expiresIn": 900
+    "refreshToken": "refresh_token"
   }
 }
-```
-
-Refresh Token은 응답 본문에 포함하지 않고 다음 쿠키로 전달한다.
-
-```http
-Set-Cookie: jariyo_refresh={refreshToken}; HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth; Max-Age=1209600
 ```
 
 ### 오류
@@ -397,7 +393,7 @@ POST /api/v1/auth/sign-in
 ```json
 {
   "email": "user@example.com",
-  "password": "long-secure-passphrase"
+  "password": "password"
 }
 ```
 
@@ -407,12 +403,11 @@ POST /api/v1/auth/sign-in
 {
   "data": {
     "accessToken": "token",
-    "expiresIn": 900
+    "refreshToken": "refresh_token",
+    "expiresIn": 3600
   }
 }
 ```
-
-Refresh Token은 회원가입과 동일한 `jariyo_refresh` 쿠키로 전달한다.
 
 ---
 
@@ -422,20 +417,13 @@ Refresh Token은 회원가입과 동일한 `jariyo_refresh` 쿠키로 전달한�
 POST /api/v1/auth/refresh
 ```
 
-요청 본문은 사용하지 않으며 `jariyo_refresh` 쿠키를 사용한다.
-
-### 응답
+### 요청
 
 ```json
 {
-  "data": {
-    "accessToken": "token",
-    "expiresIn": 900
-  }
+  "refreshToken": "refresh_token"
 }
 ```
-
-재발급에 성공하면 기존 Refresh Token을 폐기하고 같은 이름의 새 쿠키를 발급한다.
 
 ---
 
@@ -444,9 +432,6 @@ POST /api/v1/auth/refresh
 ```http
 POST /api/v1/auth/sign-out
 ```
-
-현재 `jariyo_refresh` 쿠키가 가리키는 로그인 세션을 폐기하고 쿠키를 삭제한다.
-쿠키가 없거나 이미 폐기된 경우에도 성공으로 처리한다.
 
 ---
 
@@ -663,6 +648,13 @@ partySize
 
 `staffId`는 선택 사항이다.
 
+슬롯 계산 기준:
+
+* 슬롯 시작 시각은 30분 단위로 계산한다.
+* `staffId`를 지정하지 않으면 예약 가능한 직원별 슬롯을 모두 반환한다.
+* 같은 시작 시각에서는 직원명 오름차순으로 정렬한다.
+* `occupiedUntil` 안에 겹치는 기존 예약이 있으면 해당 슬롯은 제외한다.
+
 ### 예시
 
 ```http
@@ -719,6 +711,8 @@ WAITLIST_AVAILABLE
 # 7. 고객 예약 API
 
 ## [MVP-P0] 7.1 예약 생성
+
+MVP-P0 일반 예약은 홀드 없이 즉시 `CONFIRMED`로 생성한다.
 
 ```http
 POST /api/v1/reservations
@@ -784,6 +778,9 @@ INVALID_PARTY_SIZE
 ## [MVP-P1] 7.2 예약 홀드 생성
 
 결제나 추가 확인 단계가 필요한 경우 사용할 수 있다.
+기존 `POST /api/v1/reservations`의 즉시 확정 흐름은 유지한다.
+
+예약 홀드 생성·확정·만료는 MVP-P0 예약 워크스트림 이후의 후속 기능이다.
 
 ```http
 POST /api/v1/reservation-holds
@@ -804,6 +801,8 @@ Idempotency-Key: {key}
 
 ### 응답
 
+`201 Created`
+
 ```json
 {
   "data": {
@@ -813,6 +812,22 @@ Idempotency-Key: {key}
   }
 }
 ```
+
+### 오류
+
+```text
+STORE_NOT_ACTIVE
+SERVICE_NOT_ACTIVE
+STAFF_NOT_AVAILABLE
+RESERVATION_SLOT_ALREADY_TAKEN
+RESERVATION_OUTSIDE_BOOKING_WINDOW
+RESERVATION_TOO_CLOSE_TO_START
+CUSTOMER_HAS_OVERLAPPING_RESERVATION
+INVALID_PARTY_SIZE
+```
+
+홀드가 생성되면 `holdExpiresAt` 전까지 해당 직원과 고객의 시간 슬롯을 활성 예약처럼 점유한다.
+같은 `Idempotency-Key`와 같은 요청을 재시도하면 기존 홀드 결과를 반환한다.
 
 ---
 
@@ -843,6 +858,10 @@ RESERVATION_INVALID_STATE
 RESERVATION_SLOT_ALREADY_TAKEN
 ```
 
+`holdExpiresAt`과 같은 시각부터 홀드는 만료된 것으로 판단한다.
+확정과 만료 처리는 예약 행 잠금으로 직렬화되므로 하나의 상태 전이만 성공한다.
+같은 `Idempotency-Key`로 성공한 확정 요청을 재시도하면 기존 확정 결과를 반환한다.
+
 ---
 
 ## [MVP-P0] 7.4 내 예약 목록 조회
@@ -860,6 +879,11 @@ GET /api/v1/me/reservations
 | `to` | 아니요 | 매장 현지 날짜 기준 종료일, 포함 |
 | `cursor` | 아니요 | 이전 응답의 `page.cursor` |
 | `limit` | 아니요 | 기본 20, 1~100 범위 |
+
+`from`, `to`는 각 예약 매장의 시간대로 계산한 예약 시작 날짜에 양 끝을 포함해 적용한다.
+결과는 `startAt DESC`, `id DESC` 순서로 반환한다.
+
+`cursor`, `limit`, `nextCursor` 기반 페이지네이션은 후속 기능에서 함께 정의한다.
 
 ### 예시
 
@@ -961,10 +985,11 @@ Idempotency-Key: {key}
 
 ```json
 {
-  "reasonCode": "CUSTOMER_SCHEDULE_CHANGED",
   "reason": "개인 일정이 생겼습니다."
 }
 ```
+
+`reason`은 255자 이하의 필수 자유 문장이다. 별도의 고객 취소 사유 분류 코드는 받지 않는다.
 
 ### 응답
 
@@ -990,7 +1015,7 @@ RESERVATION_NOT_OWNED_BY_USER
 
 ---
 
-## [MVP-P1] 7.7 예약 상태 이력 조회
+## [MVP-P0] 7.7 예약 상태 이력 조회
 
 ```http
 GET /api/v1/reservations/{reservationId}/history
@@ -1007,6 +1032,14 @@ GET /api/v1/reservations/{reservationId}/history
       "changedByType": "CUSTOMER",
       "reasonCode": "CREATED",
       "occurredAt": "2026-07-11T10:00:00+09:00"
+    },
+    {
+      "previousStatus": "CONFIRMED",
+      "nextStatus": "CANCELLED",
+      "changedByType": "CUSTOMER",
+      "reasonCode": "CUSTOMER_CANCELLED",
+      "note": "개인 일정이 생겼습니다.",
+      "occurredAt": "2026-07-15T13:00:00+09:00"
     }
   ]
 }
@@ -1374,20 +1407,7 @@ Idempotency-Key: {key}
 }
 ```
 
-### 비회원 요청
-
-```json
-{
-  "storeId": "store_123",
-  "serviceId": "service_123",
-  "preferredStaffId": null,
-  "partySize": 1,
-  "guest": {
-    "name": "류승엽",
-    "phoneNumber": "01012345678"
-  }
-}
-```
+로그인이 필요하다. 비회원은 공개 API로 직접 등록하지 않고 운영자 현장 대기 등록 API를 통해 직원이 대리 접수한다.
 
 ### 응답
 
@@ -2040,8 +2060,7 @@ Idempotency-Key: {key}
 
 ```json
 {
-  "responseTimeoutMinutes": 3,
-  "sendNotification": true
+  "responseTimeoutMinutes": 3
 }
 ```
 
@@ -2064,6 +2083,17 @@ Idempotency-Key: {key}
 WALK_IN_INVALID_STATE
 WALK_IN_ALREADY_CALLED
 ```
+
+---
+
+## [MVP-P1] 16.3.1 현장 고객 수동 체크인
+
+```http
+POST /api/v1/admin/stores/{storeId}/walk-ins/{walkInId}/check-in
+Idempotency-Key: {key}
+```
+
+활성 `STAFF` 이상의 매장 멤버가 `CALLED` 상태 고객을 체크인한다. 비회원 현장 고객은 이 API로만 체크인하며 체크인 방식은 `STAFF_MANUAL`로 기록한다.
 
 ---
 
@@ -2090,6 +2120,23 @@ Idempotency-Key: {key}
   "reason": "고객이 잠시 자리를 비움"
 }
 ```
+
+---
+
+## [MVP-P1] 16.5.1 운영자 현장 대기 취소
+
+```http
+POST /api/v1/admin/stores/{storeId}/walk-ins/{walkInId}/cancel
+Idempotency-Key: {key}
+```
+
+```json
+{
+  "reason": "고객 요청으로 접수 취소"
+}
+```
+
+직원이 대리 등록한 비회원 대기를 포함해 `WAITING`, `CALLED`, `SKIPPED`, `CHECKED_IN` 상태를 취소할 수 있다.
 
 ---
 
@@ -2135,6 +2182,8 @@ Idempotency-Key: {key}
 ---
 
 # 17. 서비스 진행 API
+
+이슈 #10에서는 현장 고객 서비스 시작·완료만 구현한다. 예약 고객 서비스 진행과 예약 노쇼·체크인은 예약 워크스트림 이슈 #9에서 구현한다.
 
 ## [MVP-P1] 17.1 예약 서비스 시작
 
@@ -3275,12 +3324,8 @@ IN_SERVICE → COMPLETED
 
 ```text
 AUTHENTICATION_REQUIRED
-INVALID_CREDENTIALS
 INVALID_ACCESS_TOKEN
 ACCESS_TOKEN_EXPIRED
-INVALID_REFRESH_TOKEN
-REFRESH_TOKEN_EXPIRED
-REFRESH_TOKEN_REUSED
 ACCESS_DENIED
 STORE_ACCESS_DENIED
 RESOURCE_NOT_OWNED_BY_USER
@@ -3415,10 +3460,12 @@ OPERATION_TIMEOUT
 
 목록 API는 cursor 기반 페이지네이션을 기본으로 한다.
 
+단, MVP-P0의 `GET /api/v1/me/reservations`는 전체 목록과 필터만 제공한다. 이 API의 cursor 페이지네이션은 후속 기능에서 응답 계약과 함께 추가한다.
+
 ### 요청
 
 ```http
-GET /api/v1/me/reservations?limit=20&cursor=abc
+GET /api/v1/stores?limit=20&cursor=abc
 ```
 
 ### 응답
