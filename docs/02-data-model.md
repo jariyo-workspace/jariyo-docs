@@ -1296,6 +1296,7 @@ audit_log
 - action
 - target_type
 - target_id
+- reason
 - previous_data
 - changed_data
 - request_id
@@ -1534,6 +1535,7 @@ failed_async_job
 ### status
 
 ```text
+PENDING
 FAILED
 RESOLVED
 IGNORED
