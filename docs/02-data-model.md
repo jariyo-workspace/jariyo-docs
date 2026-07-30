@@ -630,6 +630,10 @@ CHECKED_IN
 IN_SERVICE
 ```
 
+단, `HELD`는 `hold_expires_at > 현재 시각`인 동안에만 활성 예약으로 취급한다.
+스케줄러가 아직 `EXPIRED` 상태로 갱신하지 않았더라도 만료 시각이 지난 홀드는
+새 예약과 예약 가능 시간 조회를 막지 않는다.
+
 다음 상태는 새로운 예약을 막지 않는다.
 
 ```text
@@ -918,6 +922,8 @@ walk_in_entry
 
 비회원 현장 접수를 허용하면 `guest_name`, `guest_phone_number`를 사용한다.
 
+MVP 이슈 #10에서는 로그인 고객의 직접 등록과 직원의 비회원 대리 등록만 허용한다. 비회원에게 공개 관리 토큰을 발급하지 않으며, 비회원의 호출 응답과 체크인은 매장 직원이 처리한다.
+
 ### status
 
 ```text
@@ -1059,6 +1065,8 @@ CANCELLED
 * 잘못된 체크인의 취소
 * 체크인 방식 분석
 
+MVP 이슈 #10에서는 `walk_in_entry_id`를 참조하는 현장 체크인부터 구현한다. `reservation_id`를 사용하는 예약 체크인은 예약 워크스트림 이슈 #9에서 스키마와 외래 키를 확장한다.
+
 ---
 
 ## 10.2 CheckInToken
@@ -1140,6 +1148,28 @@ CANCELLED
 예약은 예정된 약속이고, 서비스 세션은 실제 이용 기록이다.
 
 예를 들어 고객이 14시 예약이지만 14시 15분에 서비스를 시작해 15시에 끝날 수 있다. 예약 데이터만으로는 실제 운영 성과를 정확히 측정하기 어렵다.
+
+MVP 이슈 #10의 서비스 세션은 현장 대기만 참조한다. 예약 서비스 세션은 예약 워크스트림 이슈 #9에서 같은 생명주기 규칙으로 확장한다.
+
+---
+
+## 11.2 WalkInStatusHistory
+
+현장 대기의 모든 상태 전이를 별도 이력으로 저장한다.
+
+```text
+walk_in_status_history
+- id
+- walk_in_entry_id
+- previous_status
+- new_status
+- actor_type
+- actor_id
+- reason
+- occurred_at
+```
+
+등록 시 `previous_status`는 비어 있고 이후에는 변경 전·후 상태를 모두 기록한다. 고객, 매장 직원, 시스템 처리를 `actor_type`으로 구분한다.
 
 ---
 
@@ -1404,7 +1434,7 @@ consumer_name + event_id 조합은 하나만 존재한다.
 
 ## 14.3 ScheduledJob
 
-특정 시각에 처리해야 하는 작업이다.
+특정 시각에 처리해야 하는 작업을 확장할 때 사용하는 목표 모델이다.
 
 ```text
 scheduled_job
@@ -1447,7 +1477,42 @@ CANCELLED
 
 예약 홀드 만료나 빈자리 제안 만료를 단순 메모리 타이머로 처리하면 서버가 재시작될 때 작업이 유실될 수 있다.
 
-예약 상태와 별도의 지속 가능한 작업 레코드로 관리한다.
+현재 MVP 구현은 `reservation.hold_expires_at`, `slot_offer.expires_at`처럼 원본 엔티티에 저장된
+만료 시각을 스케줄러가 다시 조회하는 방식으로 재시작 내구성을 확보한다. 재시도 정책,
+분산 worker 잠금과 작업별 운영 화면이 필요해지면 위 `scheduled_job` 모델로 분리한다.
+
+## 14.4 FailedAsyncJob
+
+비동기 이벤트 발행이나 알림 후속 처리 실패를 운영 관점에서 추적하는 레코드다.
+
+```text
+failed_async_job
+- id
+- store_id
+- type
+- reference_type
+- reference_id
+- status
+- attempt_count
+- last_error_code
+- last_error_message
+- failed_at
+- ignored_reason
+- created_at
+- updated_at
+```
+
+### status
+
+```text
+FAILED
+RESOLVED
+IGNORED
+```
+
+### 설계 이유
+
+실패 이력을 outbox와 분리해 두면 운영자가 최근 실패 건을 빠르게 조회하고 재처리 결과를 별도로 추적할 수 있다.
 
 ## 14.4 FailedAsyncJob
 
@@ -1652,6 +1717,8 @@ stateDiagram-v2
 
 ## 시나리오 1. 고객이 일반 예약을 생성한다
 
+MVP-P0 일반 예약은 결제나 추가 확인 단계가 없으므로 홀드를 거치지 않고 즉시 확정한다.
+
 ### 1단계: 요청 중복 확인
 
 `reservation_request`를 생성한다.
@@ -1663,20 +1730,48 @@ request_type = CREATE_RESERVATION
 
 같은 요청 키가 이미 완료됐다면 기존 예약 결과를 반환한다.
 
-### 2단계: 예약 홀드 생성
+### 2단계: 충돌 확인과 예약 확정
+
+같은 직원과 고객의 활성 예약이 겹치는지 트랜잭션 안에서 다시 확인한 뒤 예약과 상태 이력을 함께 저장한다.
+
+```text
+reservation.status = CONFIRMED
+reservation.confirmed_at = 현재 시각
+
+reservation_status_history.previous_status = null
+reservation_status_history.next_status = CONFIRMED
+reservation_status_history.reason_code = CREATED
+```
+
+### 3단계: 후속 이벤트
+
+```text
+domain_event.event_type = RESERVATION_CONFIRMED
+```
+
+이 이벤트로 알림과 리마인더를 생성한다.
+
+### 후속 예약 홀드 흐름
+
+결제나 추가 확인 단계가 필요해지면 다음 흐름을 별도 후속 작업으로 구현한다.
+
+#### 1단계: 예약 홀드 생성
 
 ```text
 reservation.status = HELD
 reservation.hold_expires_at = 현재 시각 + 홀드 유지 시간
 ```
 
-동시에 만료 작업을 만든다.
+`reservation` 행의 `hold_expires_at`이 만료 작업의 지속 가능한 기준이 된다.
+현재 구현은 주기적으로 만료된 `HELD` 행을 조회하고 잠근 뒤 `EXPIRED`로 전이한다.
 
 ```text
-scheduled_job.job_type = EXPIRE_RESERVATION_HOLD
+reservation.status = HELD
+reservation.hold_expires_at <= 현재 시각
+→ reservation.status = EXPIRED
 ```
 
-### 3단계: 예약 확정
+#### 2단계: 예약 확정
 
 고객이 필요한 절차를 마치면 다음처럼 변경한다.
 
@@ -1685,15 +1780,14 @@ reservation.status = CONFIRMED
 reservation.confirmed_at = 현재 시각
 ```
 
-홀드 만료 작업은 취소한다.
+확정과 만료 작업은 같은 예약 행을 잠근다. 확정이 먼저 성공하면 만료 스캔은
+`CONFIRMED` 상태를 확인하고 건너뛰며, 만료가 먼저 성공하면 이후 확정 요청은 거절한다.
 
-### 4단계: 후속 이벤트
+#### 3단계: 후속 이벤트와 상태 이력
 
-```text
-domain_event.event_type = RESERVATION_CONFIRMED
-```
-
-이 이벤트로 알림과 리마인더를 생성한다.
+1. `CONFIRMED` 확정 또는 `EXPIRED` 자동 만료
+2. 확정과 만료의 동시 처리 충돌 방지
+3. 각 상태 전이 이력 저장
 
 ---
 
@@ -1729,6 +1823,17 @@ CONFIRMED → CANCELLED
 cancelled_at
 cancellation_reason
 cancelled_by_type = CUSTOMER
+```
+
+`cancellation_reason`에는 고객이 입력한 자유 문장만 저장하며 별도의 고객 취소 사유 분류 코드는 두지 않는다.
+
+상태 이력에는 다음 값을 기록한다.
+
+```text
+previous_status = CONFIRMED
+next_status = CANCELLED
+changed_by_type = CUSTOMER
+reason_code = CUSTOMER_CANCELLED
 ```
 
 그리고 다음 이벤트를 만든다.
