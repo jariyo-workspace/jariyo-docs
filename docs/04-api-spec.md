@@ -853,19 +853,23 @@ GET /api/v1/me/reservations
 
 ### 쿼리
 
-```text
-status
-from
-to
-cursor
-limit
-```
+| 이름 | 필수 | 설명 |
+| --- | --- | --- |
+| `status` | 아니요 | 예약 상태 |
+| `from` | 아니요 | 매장 현지 날짜 기준 시작일, 포함 |
+| `to` | 아니요 | 매장 현지 날짜 기준 종료일, 포함 |
+| `cursor` | 아니요 | 이전 응답의 `page.cursor` |
+| `limit` | 아니요 | 기본 20, 1~100 범위 |
 
 ### 예시
 
 ```http
-GET /api/v1/me/reservations?status=CONFIRMED&from=2026-07-01
+GET /api/v1/me/reservations?status=CONFIRMED&from=2026-07-01&limit=20
 ```
+
+정렬은 `startAt DESC, id DESC`로 고정한다. `cursor`는 두 정렬 키를 담은
+Base64 URL-safe opaque 문자열이며 클라이언트는 해석하거나 수정하지 않는다.
+다음 페이지에서도 같은 상태·날짜 필터를 함께 전달한다.
 
 ### 응답
 
@@ -890,9 +894,16 @@ GET /api/v1/me/reservations?status=CONFIRMED&from=2026-07-01
       "startAt": "2026-07-18T14:00:00+09:00",
       "serviceEndAt": "2026-07-18T14:30:00+09:00"
     }
-  ]
+  ],
+  "page": {
+    "cursor": "MjAyNi0wNy0xOFQwNTowMDowMFp8MDE5MGYxMjMtNDU2Ny03ODlhLWJjZGUtZjAxMjM0NTY3ODlh",
+    "hasNext": true
+  }
 }
 ```
+
+`hasNext`가 `false`이면 `page.cursor`는 `null`이다. 형식이 잘못된 cursor는
+`COMMON-400` 오류로 응답한다.
 
 ---
 
