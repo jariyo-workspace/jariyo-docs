@@ -239,6 +239,8 @@ MVP-P0 구현 기준:
 * 동시성 제어 전략
 * 멱등성 키 재사용 검증
 * 취소 가능 시간 정책 검증
+* 내 예약 목록은 `start_at DESC, id DESC` 복합 키 cursor로 keyset pagination
+* 상태·매장 현지 날짜·cursor 조건을 하나의 저장소 쿼리에 적용
 
 선행 조건:
 
