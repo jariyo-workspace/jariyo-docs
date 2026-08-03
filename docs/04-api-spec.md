@@ -544,6 +544,7 @@ GET /api/v1/stores/{storeId}
     "businessHours": [
       {
         "dayOfWeek": "MONDAY",
+        "isClosed": false,
         "periods": [
           {
             "openTime": "10:00",
@@ -2396,6 +2397,26 @@ Idempotency-Key: {key}
 
 # 19. 매장 서비스 관리 API
 
+설정 쓰기는 활성 `MANAGER` 이상만 호출할 수 있다. 직원 추가, 역할 변경과 비활성화는 `OWNER`만 가능하다. 다른 `OWNER`의 역할·상태 변경과 마지막 활성 `OWNER`의 자기 강등·비활성화는 거절한다.
+
+미래의 활성 예약을 불가능하게 만들 수 있는 설정 쓰기는 성공과 충돌 모두 `200 OK`로 응답한다. 충돌 시 어떤 값도 저장하지 않고 감사 로그도 생성하지 않는다.
+
+```json
+{
+  "data": {
+    "updated": false,
+    "conflicts": [
+      {
+        "reservationId": "res_123",
+        "startAt": "2026-07-18T17:30:00+09:00"
+      }
+    ]
+  }
+}
+```
+
+충돌 검사에는 미래의 `CONFIRMED`, `CHECKED_IN`, `IN_SERVICE`와 아직 만료되지 않은 `HELD` 예약이 포함된다. 서비스·직원 비활성화, 직원 담당 서비스 제거, 영업시간·근무시간 전체 교체, 일정 예외 생성·삭제에 이 응답을 사용한다. 성공 시 `updated=true`, `conflicts=[]`다.
+
 ## 19.1 서비스 목록 조회
 
 ```http
@@ -2610,6 +2631,8 @@ PUT /api/v1/admin/stores/{storeId}/staff/{staffId}/schedules
 }
 ```
 
+요청 목록은 기존 반복 근무시간을 전체 교체한다. 생략한 요일은 휴무로 처리한다.
+
 ### 응답
 
 충돌 예약이 있는 경우 바로 변경하지 않고 경고 응답을 줄 수 있다.
@@ -2698,6 +2721,8 @@ PUT /api/v1/admin/stores/{storeId}/business-hours
   ]
 }
 ```
+
+요청 목록은 기존 영업시간을 전체 교체한다. 생략한 요일은 휴무로 처리한다.
 
 ---
 

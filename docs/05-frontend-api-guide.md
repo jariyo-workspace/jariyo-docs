@@ -1220,7 +1220,7 @@ POST /api/v1/admin/stores/{storeId}/service-sessions/{sessionId}/complete
 목록:
 
 ```http
-GET /api/v1/admin/stores/{storeId}/services
+GET /api/v1/stores/{storeId}/services?activeOnly=false
 ```
 
 생성:
@@ -1283,7 +1283,7 @@ PUT /api/v1/admin/stores/{storeId}/staff/{staffId}/services
 POST /api/v1/admin/stores/{storeId}/staff/{staffId}/deactivate
 ```
 
-`STAFF_HAS_FUTURE_RESERVATIONS` 오류 시 예정 예약 목록을 보여준다.
+응답의 `updated`가 `false`이면 저장된 것으로 간주하지 않고 `conflicts`의 예정 예약 목록을 보여준다.
 
 ---
 
@@ -1308,6 +1308,8 @@ POST /api/v1/admin/stores/{storeId}/staff/{staffId}/schedule-exceptions
 ```
 
 충돌 예약이 반환되면 변경을 완료한 것으로 간주하지 않는다.
+
+영업시간과 반복 근무시간은 전체 교체 요청이다. 목록에 생략한 요일은 휴무로 표시하고, 저장 성공 뒤 관련 조회 API를 다시 호출한다. 서비스·직원 비활성화, 담당 서비스 제거, 일정 예외 생성·삭제도 같은 `{updated, conflicts}` 계약을 사용한다.
 
 ---
 
