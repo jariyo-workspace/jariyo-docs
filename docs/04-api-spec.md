@@ -1153,10 +1153,15 @@ GET /api/v1/waitlists/{waitlistId}
     "status": "WAITING",
     "sequenceNumber": 15,
     "activeOffer": null,
+    "resultingReservationId": null,
     "createdAt": "2026-07-11T10:00:00+09:00"
   }
 }
 ```
+
+`sequenceNumber`는 같은 매장에 접수된 신청 순서를 나타내며 희망 시간과 직원 조건까지 반영한 확정 순위는 아니다.
+
+대기가 `RESERVED`이면 `resultingReservationId`로 전환된 예약을 조회할 수 있다.
 
 ---
 
@@ -1261,10 +1266,13 @@ GET /api/v1/slot-offers/{offerId}
     "serviceEndAt": "2026-07-18T15:30:00+09:00",
     "status": "PENDING",
     "expiresAt": "2026-07-11T10:03:00+09:00",
-    "remainingSeconds": 125
+    "remainingSeconds": 125,
+    "resultingReservationId": null
   }
 }
 ```
+
+수락된 제안은 `resultingReservationId`로 생성된 예약을 조회할 수 있다.
 
 ---
 
@@ -1407,7 +1415,7 @@ Idempotency-Key: {key}
 }
 ```
 
-로그인이 필요하다. 비회원은 공개 API로 직접 등록하지 않고 운영자 현장 대기 등록 API를 통해 직원이 대리 접수한다.
+이 API는 로그인 고객 전용이다. 비회원은 매장 직원이 `POST /api/v1/admin/stores/{storeId}/walk-ins`로 대리 등록한다.
 
 ### 응답
 
