@@ -2391,8 +2391,10 @@ Idempotency-Key: {key}
 ## 19.1 서비스 목록 조회
 
 ```http
-GET /api/v1/admin/stores/{storeId}/services
+GET /api/v1/stores/{storeId}/services?activeOnly=false
 ```
+
+설정 화면도 기존 고객용 조회를 재사용한다.
 
 ---
 
@@ -2416,11 +2418,9 @@ POST /api/v1/admin/stores/{storeId}/services
 
 ---
 
-## 19.3 서비스 상세 조회
+## [MVP-P2] 19.3 서비스 상세 조회
 
-```http
-GET /api/v1/admin/stores/{storeId}/services/{serviceId}
-```
+MVP에서는 별도 상세 API를 만들지 않고 서비스 목록 응답을 사용한다.
 
 ---
 
@@ -2478,10 +2478,10 @@ bookingEnabled
 
 ---
 
-## 20.2 직원 초대
+## 20.2 직원 추가
 
 ```http
-POST /api/v1/admin/stores/{storeId}/staff/invitations
+POST /api/v1/admin/stores/{storeId}/staff
 ```
 
 ### 요청
@@ -2493,6 +2493,8 @@ POST /api/v1/admin/stores/{storeId}/staff/invitations
   "displayName": "민지"
 }
 ```
+
+기존 가입 사용자를 이메일로 찾아 매장 멤버로 연결한다. 신규 계정 생성과 초대 메일 발송은 MVP에서 제외한다.
 
 ---
 
@@ -2767,8 +2769,10 @@ PUT /api/v1/admin/stores/{storeId}/policy
 ## 24.1 매장 정보 조회
 
 ```http
-GET /api/v1/admin/stores/{storeId}
+GET /api/v1/stores/{storeId}
 ```
+
+설정 화면도 기존 고객용 조회를 재사용한다.
 
 ---
 
@@ -2785,10 +2789,11 @@ PUT /api/v1/admin/stores/{storeId}
   "name": "자리요 헤어",
   "description": "예약과 현장 대기가 가능한 헤어숍",
   "phoneNumber": "0531234567",
-  "address": "대구광역시 ...",
-  "timezone": "Asia/Seoul"
+  "address": "대구광역시 ..."
 }
 ```
+
+`timezone`은 MVP에서 수정하지 않는다.
 
 ---
 
@@ -3597,6 +3602,8 @@ POST /admin/.../service-sessions/{id}/complete
 
 # 37. API 구현 우선순위
 
+MVP 포함 여부와 구현 상태의 단일 기준은 `01-plan.md`의 8장이다. 아래 목록은 구현 순서만 나타내며, 목록에 있다고 현재 구현된 것은 아니다.
+
 ## 1차 고객 핵심 API
 
 ```text
@@ -3619,7 +3626,6 @@ GET /waitlists/{waitlistId}
 POST /waitlists/{waitlistId}/cancel
 GET /slot-offers/{offerId}
 POST /slot-offers/{offerId}/accept
-POST /slot-offers/{offerId}/decline
 ```
 
 ## 3차 현장 대기 API
@@ -3630,7 +3636,6 @@ POST /walk-ins
 GET /walk-ins/{walkInId}
 POST /walk-ins/{walkInId}/cancel
 POST /walk-ins/{walkInId}/respond-call
-POST /reservations/{reservationId}/check-in
 ```
 
 ## 4차 운영자 API
@@ -3638,9 +3643,12 @@ POST /reservations/{reservationId}/check-in
 ```text
 GET /admin/stores/{storeId}/dashboard/today
 GET /admin/stores/{storeId}/reservations
-POST /admin/stores/{storeId}/reservations
+GET /admin/stores/{storeId}/waitlists
 GET /admin/stores/{storeId}/walk-ins
 POST /admin/stores/{storeId}/walk-ins/{walkInId}/call
+POST /admin/stores/{storeId}/walk-ins/{walkInId}/check-in
+POST /admin/stores/{storeId}/reservations/{reservationId}/check-in
+POST /admin/stores/{storeId}/reservations/{reservationId}/mark-no-show
 POST /admin/stores/{storeId}/reservations/{reservationId}/start-service
 POST /admin/stores/{storeId}/service-sessions/{sessionId}/complete
 ```
@@ -3648,15 +3656,13 @@ POST /admin/stores/{storeId}/service-sessions/{sessionId}/complete
 ## 5차 매장 설정 API
 
 ```text
-서비스 관리
-직원 관리
-근무 일정
-휴무 일정
-매장 정책
-감사 로그
-실패 작업
-통계
+기존 매장·서비스·직원·일정·정책 조회 API 재사용
+매장 기본 정보와 정책 수정
+서비스와 가입된 사용자의 매장 멤버 추가·관리
+영업시간과 매장·직원 일정 예외 관리
 ```
+
+설정 쓰기는 [backend #37](https://github.com/jariyo-workspace/jariyo-backend/issues/37)이 소유한다. 감사 로그, 실패 작업, 통계 조회는 별도 운영 기능으로 이미 구현됐으며 #37 범위에 포함하지 않는다.
 
 ---
 
@@ -3666,12 +3672,15 @@ POST /admin/stores/{storeId}/service-sessions/{sessionId}/complete
 
 ```text
 QR 체크인
+고객 앱 직접 체크인
 실시간 이벤트 스트림
 고급 통계
 직원 초대 이메일
 실패 작업 관리 화면
+빈자리 제안 거절과 대기 유지 정책
 빈자리 제안 수동 생성
 대기 순서 직접 변경
+운영자 수동 예약 생성, 시간 변경, 담당 직원 변경
 서비스별 실제 시간 분석
 ```
 
