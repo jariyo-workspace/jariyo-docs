@@ -656,6 +656,8 @@ GET /api/v1/waitlists/{waitlistId}
 
 `activeOffer`가 존재하면 빈자리 제안 화면으로 이동할 수 있는 버튼을 제공한다.
 
+`sequenceNumber`는 매장 내 신청 순서이며 희망 조건별 확정 순위가 아니다. `RESERVED` 상태에서는 `resultingReservationId`로 생성된 예약 상세로 이동한다.
+
 ---
 
 ## 6.13 예약 대기 취소
@@ -684,7 +686,8 @@ GET /api/v1/slot-offers/{offerId}
   "status": "PENDING",
   "startAt": "2026-07-18T15:00:00+09:00",
   "expiresAt": "2026-07-11T10:03:00+09:00",
-  "remainingSeconds": 125
+  "remainingSeconds": 125,
+  "resultingReservationId": null
 }
 ```
 
@@ -692,8 +695,8 @@ GET /api/v1/slot-offers/{offerId}
 
 | 상태         | 화면                |
 | ---------- | ----------------- |
-| `PENDING`  | 수락 및 거절 버튼        |
-| `ACCEPTED` | 생성된 예약으로 이동       |
+| `PENDING`  | 수락 버튼              |
+| `ACCEPTED` | `resultingReservationId` 예약으로 이동 |
 | `DECLINED` | 거절 완료 안내          |
 | `EXPIRED`  | 제안 만료 안내          |
 | `REVOKED`  | 매장에서 제안을 취소했다는 안내 |
@@ -731,6 +734,8 @@ POST /api/v1/slot-offers/{offerId}/accept
 ---
 
 ## 6.16 빈자리 제안 거절
+
+`MVP-P2` 후속 구현 범위다. 구현 전에는 거절 버튼을 노출하지 않는다.
 
 ```http
 POST /api/v1/slot-offers/{offerId}/decline
