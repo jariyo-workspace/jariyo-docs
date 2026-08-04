@@ -735,8 +735,6 @@ POST /api/v1/slot-offers/{offerId}/accept
 
 ## 6.16 빈자리 제안 거절
 
-`MVP-P2` 후속 구현 범위다. 구현 전에는 거절 버튼을 노출하지 않는다.
-
 ```http
 POST /api/v1/slot-offers/{offerId}/decline
 ```
@@ -749,7 +747,9 @@ POST /api/v1/slot-offers/{offerId}/decline
 }
 ```
 
-`keepWaitlistActive === true`이면 대기 상세로 이동한다.
+`keepWaitlistActive === true`이면 대기 상세로 이동하고 `WAITING` 상태를 표시한다. `false`이면 대기 상태를 `CANCELLED`로 갱신한다.
+
+처리 중에는 수락과 거절 버튼을 모두 비활성화한다. `SLOT_OFFER_EXPIRED`, `SLOT_OFFER_ALREADY_ACCEPTED`, `SLOT_OFFER_ALREADY_DECLINED`, `WAITLIST_INVALID_STATE`가 발생하면 제안과 대기 상세를 다시 조회한다.
 
 ---
 
