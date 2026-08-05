@@ -1364,6 +1364,29 @@ Idempotency-Key: {key}
 }
 ```
 
+`keepWaitlistActive`가 `false`이면 `waitlist.status`는 `CANCELLED`다.
+
+### 하나의 트랜잭션으로 보장할 변경
+
+```text
+SlotOffer PENDING → DECLINED
+WaitlistEntry OFFERED → WAITING 또는 CANCELLED
+제안 상태 이력 기록
+```
+
+제안과 예약 대기를 비관적 잠금으로 조회하며 같은 `Idempotency-Key`와 요청 본문의 재시도에는 최초 응답을 반환한다.
+
+### 오류
+
+```text
+SLOT_OFFER_NOT_FOUND
+SLOT_OFFER_EXPIRED
+SLOT_OFFER_ALREADY_ACCEPTED
+SLOT_OFFER_ALREADY_DECLINED
+WAITLIST_NOT_OWNED_BY_USER
+WAITLIST_INVALID_STATE
+```
+
 ---
 
 # 10. 현장 대기 API
@@ -3659,6 +3682,7 @@ GET /waitlists/{waitlistId}
 POST /waitlists/{waitlistId}/cancel
 GET /slot-offers/{offerId}
 POST /slot-offers/{offerId}/accept
+POST /slot-offers/{offerId}/decline
 ```
 
 ## 3차 현장 대기 API
@@ -3710,7 +3734,6 @@ QR 체크인
 고급 통계
 직원 초대 이메일
 실패 작업 관리 화면
-빈자리 제안 거절과 대기 유지 정책
 빈자리 제안 수동 생성
 대기 순서 직접 변경
 운영자 수동 예약 생성, 시간 변경, 담당 직원 변경

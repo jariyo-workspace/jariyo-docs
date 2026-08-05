@@ -852,12 +852,13 @@ REVOKED
 
 ### 핵심 불변식
 
-1. `PENDING` 상태인 제안만 수락할 수 있다.
-2. 현재 시각이 `expires_at` 이전인 경우에만 수락할 수 있다.
+1. `PENDING` 상태인 제안만 수락하거나 거절할 수 있다.
+2. 현재 시각이 `expires_at` 이전인 경우에만 수락하거나 거절할 수 있다.
 3. `ACCEPTED` 상태이면 `resulting_reservation_id`가 존재해야 한다.
 4. 하나의 제안은 최대 하나의 예약만 생성한다.
 5. 같은 실제 시간 슬롯은 여러 대기 고객에게 동시에 활성 제안하지 않는 것을 기본 정책으로 한다.
 6. 제안 수락과 예약 생성은 하나의 논리 작업으로 처리한다.
+7. 제안 거절과 예약 대기 상태 변경은 하나의 논리 작업으로 처리한다.
 
 ---
 
@@ -1683,6 +1684,13 @@ waitlist_entry: OFFERED → WAITING
 ```
 
 대기 신청 전체 유효 기간이 끝난 경우에만 `waitlist_entry`를 `EXPIRED`로 바꾼다.
+
+고객이 제안을 거절하면 대기 유지 선택에 따라 다음 중 하나로 처리한다.
+
+```text
+slot_offer: PENDING → DECLINED
+waitlist_entry: OFFERED → WAITING 또는 CANCELLED
+```
 
 ---
 

@@ -324,7 +324,7 @@
 | 예약 대기, 빈자리 제안 수락, 현장 대기 | 핵심 흐름 완료 | 고객 관점 응답·예외 보완은 [backend #40](https://github.com/jariyo-workspace/jariyo-backend/issues/40) |
 | 운영자 조회, 감사 로그, 실패 작업, 기본 통계 | 완료 | 없음 |
 | 매장 운영 설정 쓰기 | 조회만 완료 | [backend #37](https://github.com/jariyo-workspace/jariyo-backend/issues/37) |
-| 빈자리 제안 거절 | 후순위 | [backend #43](https://github.com/jariyo-workspace/jariyo-backend/issues/43) |
+| 빈자리 제안 거절 | 완료 | 없음 |
 
 `진행 중`인 PR은 병합 전까지 완료로 보지 않는다.
 
@@ -352,11 +352,11 @@ MVP의 체크인은 직원 수동 체크인으로 충족한다. 고객 앱 직�
 
 #### 예약 대기와 빈자리 제안
 
-[backend #40](https://github.com/jariyo-workspace/jariyo-backend/issues/40)은 고객의 대기·제안·현장 대기 조회와 기존 상태 전이의 정합성만 보완한다. 빈자리 제안 거절은 [backend #43](https://github.com/jariyo-workspace/jariyo-backend/issues/43), 운영자 수동 제안과 대기 순서 변경은 후순위로 분리한다.
+[backend #40](https://github.com/jariyo-workspace/jariyo-backend/issues/40)은 고객의 대기·제안·현장 대기 조회와 기존 상태 전이의 정합성을 보완하고, [backend #43](https://github.com/jariyo-workspace/jariyo-backend/issues/43)은 빈자리 제안 거절과 대기 유지 정책을 구현한다. 운영자 수동 제안과 대기 순서 변경은 후순위로 분리한다.
 
 ### 8.3 구현 순서
 
-[backend #38](https://github.com/jariyo-workspace/jariyo-backend/issues/38)에서 이 기준을 먼저 확정한다. 이후 #40과 #37은 서로 다른 도메인에서 독립적으로 진행할 수 있으며, #43은 핵심 MVP 병합 이후 처리한다.
+[backend #38](https://github.com/jariyo-workspace/jariyo-backend/issues/38)에서 이 기준을 먼저 확정한다. 이후 #40과 #37은 서로 다른 도메인에서 독립적으로 진행하고, #43은 #40의 고객 대기 흐름을 기준으로 처리한다.
 
 ---
 
