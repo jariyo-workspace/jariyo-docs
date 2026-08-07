@@ -17,6 +17,7 @@ Figma: [자리요 디자인 파일](https://www.figma.com/design/537t4b7UmE9nLmG
 10. [백엔드 구현 가이드 v2 (10-backend-implementation-guide-v2.md)](./docs/10-backend-implementation-guide-v2.md)
 11. [백엔드 운영 가이드 (11-backend-operations-guide.md)](./docs/11-backend-operations-guide.md)
 12. [기획/설계/코드 온보딩 가이드 (12-onboarding-guide.md)](./docs/12-onboarding-guide.md)
+13. [백엔드 배포 설계서 (13-backend-deployment-design.md)](./docs/13-backend-deployment-design.md)
 
 ## Legacy 백엔드 문서
 
