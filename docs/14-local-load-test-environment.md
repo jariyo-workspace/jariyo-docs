@@ -63,6 +63,7 @@
 * `docker/local-load/nginx/default.conf`
 * `docker/local-load/sql/seed-availability-load-test.sql`
 * `load-tests/k6/availability-load.js`
+* `load-tests/k6/reservation-create-load.js`
 
 ## 6. 실행 절차
 
@@ -182,6 +183,69 @@ k6 run \
 * 인기 직원 필터 사용 시와 미사용 시 응답 시간 차이
 * 병목 추정 구간
 
+### 6.4 k6 일반 예약 생성 시나리오
+
+이슈 `#55 일반 예약 생성 부하 테스트`는 `load-tests/k6/reservation-create-load.js`로 실행한다.
+
+이 스크립트는 `6.1`의 예약 가능 시간 조회 시드와 같은 매장·서비스·직원 ID를 재사용한다.
+따라서 먼저 `seed-availability-load-test.sql`을 적재한 뒤 실행해야 한다.
+
+시나리오 특성:
+
+* 모든 VU는 `setup()` 단계에서 테스트 고객 계정을 자동 회원가입하거나, 이미 존재하면 로그인한다.
+* 각 VU는 30초 윈도우 안에서 한 번만 예약을 시도한다.
+* 요청 직전에 예약 가능 시간 조회를 수행하고, 조회 결과에서 선택한 슬롯으로 `POST /api/v1/reservations`를 호출한다.
+* `stressed` 프로필에서는 일부 VU가 성공 직후 같은 `Idempotency-Key`로 한 번 더 재호출해 멱등성 재생을 확인한다.
+
+프로필 정의:
+
+* `base`
+  * 총 사용자 수 `15`
+  * 사용자당 예약 생성 수 `1`
+  * 예약 시도 분산 구간 `30초`
+  * 허용 기준 `p95 <= 900ms`, `p99 <= 1500ms`, 의미상 실패율 `<= 1%`
+* `stressed`
+  * 총 사용자 수 `60`
+  * 사용자당 예약 생성 수 `1`
+  * 예약 시도 분산 구간 `30초`
+  * 일부 사용자 duplicate replay `1회`
+  * 허용 기준 `p95 <= 2000ms`, `p99 <= 3000ms`, 의미상 실패율 `<= 5%`
+
+실행 예시:
+
+```bash
+docker run --rm --network host \
+  -v /home/noobth/github/jariyo-backend:/work \
+  -w /work \
+  -e K6_PROFILE=base \
+  -e K6_BASE_URL=http://127.0.0.1:8080 \
+  grafana/k6 run /work/load-tests/k6/reservation-create-load.js
+```
+
+```bash
+docker run --rm --network host \
+  -v /home/noobth/github/jariyo-backend:/work \
+  -w /work \
+  -e K6_PROFILE=stressed \
+  -e K6_BASE_URL=http://127.0.0.1:8080 \
+  grafana/k6 run /work/load-tests/k6/reservation-create-load.js
+```
+
+선택 환경 변수:
+
+* `K6_PROFILE`: `base` 또는 `stressed`
+* `K6_BASE_URL`: 기본값 `http://localhost:8080`
+* `K6_SIGNUP_PASSWORD`: 기본값 `issue55-load-pass`
+* `K6_RESERVATION_CASES`: 예약 케이스 배열 JSON 문자열
+* `K6_RANDOM_SEED`: 예약 슬롯 선택 편향용 정수 시드
+
+측정 결과는 최소 아래 항목으로 정리한다.
+
+* 초기 예약 생성 성공률
+* duplicate replay 성공 여부와 동일 `reservationId` 재반환 여부
+* `RESERVATION_SLOT_ALREADY_TAKEN`, `CUSTOMER_HAS_OVERLAPPING_RESERVATION` 등 비즈니스 오류 분포
+* 예약 생성 `p95`, `p99`
+
 ## 7. 검증 관점
 
 이 환경에서는 다음을 우선 본다.
@@ -206,7 +270,7 @@ k6 run \
 
 다음 항목은 실제 부하 테스트 착수 전에 보완 대상이다.
 
-* `#55 일반 예약 생성 부하 테스트`와 `#56 현장 대기 순번 조회 부하 테스트` 시나리오 추가
+* `#56 현장 대기 순번 조회 부하 테스트` 시나리오 추가
 * `guest`, `member` 분리 결과를 자동 저장하는 리포트 출력 형식 정리
 * `worker` 런타임 분리 후 별도 컨테이너 반영
 * Redis 도입 시 캐시 포함 구성으로 확장
